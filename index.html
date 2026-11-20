@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>R22 Checkride Trainer 3D v16 — Física Real & Cenário Rico</title>
+<title>R22 Checkride Trainer 3D v17 — Física Real & Cenário Rico</title>
 <style>
 :root{
   --panel:#12161c; --panel2:#1a212b; --line:#2b3543;
@@ -237,11 +237,12 @@ body.startMode #colPad,body.startMode #cycPad,body.startMode #pedPad{display:non
 
 <div class="overlay" id="menu">
   <div class="card">
-    <h1>R22 Checkride Trainer 3D v16<small style="color:#35d17a">VERSÃO 16 · cidade densa, mar vivo e R22 Beta II fiel</small><small>Física real · Cenário Rico & Referência de Altura · Robinson R22 Beta II</small></h1>
+    <h1>R22 Checkride Trainer 3D v17<small style="color:#35d17a">VERSÃO 17 · mundo aberto, ruas curvas e missão Voo Livre</small><small>Física real · Cenário Rico & Referência de Altura · Robinson R22 Beta II</small></h1>
     <p class="sub">Toque em qualquer missão abaixo para abrir o briefing ou inicie direto no botão rápido:</p>
     <div class="quickStartRow">
       <button class="act go" onclick="window._quickStart(1)">▶ DECOLAR AGORA (MISSÃO 01 — PAIRADO)</button>
       <button class="act ghost" onclick="window._quickStart(0)">⚡ PARTIDA FRIA (MISSÃO 00)</button>
+      <button class="act ghost" style="color:#4fd6ff;border-color:#1e4b5f" onclick="window._quickStart(11)">🌍 VOO LIVRE — MUNDO ABERTO</button>
     </div>
     <div class="mgrid" id="missionGrid">
       <button class="mcard" onclick="window._openBriefing(0)"><div class="num">MISSÃO 00</div><div class="nm">Acionamento — Partida do Beta II</div><div class="ds">Cabine fria, checklist completo do POH no console 3D.</div><span class="badge">Procedimentos · Partida</span></button>
@@ -255,6 +256,7 @@ body.startMode #colPad,body.startMode #cycPad,body.startMode #pedPad{display:non
       <button class="mcard" onclick="window._openBriefing(8)"><div class="num">MISSÃO 08</div><div class="nm">Rota Urbana e Montanha</div><div class="ds">Cruze os prédios, desembarque no H urbano e suba ao platô a 1.650 ft.</div><span class="badge">Navegação · Densidade-altitude</span></button>
       <button class="mcard" onclick="window._openBriefing(9)"><div class="num">MISSÃO 09</div><div class="nm">Resgate Aeromédico — Rodovia</div><div class="ds">Pouse entre os fios de alta tensão na rodovia e leve o paciente ao hospital.</div><span class="badge">HEMS · Área confinada</span></button>
       <button class="mcard" onclick="window._openBriefing(10)"><div class="num">MISSÃO 10</div><div class="nm">Resgate Marítimo — Guincho e Navio</div><div class="ds">Pairado de guincho sobre as ondas e pouso no navio em movimento a 25 kt.</div><span class="badge">SAR · Guincho e convés móvel</span></button>
+      <button class="mcard" onclick="window._openBriefing(11)"><div class="num">MISSÃO 11</div><div class="nm">Voo Livre — Mundo Aberto</div><div class="ds">Sem objetivo: decole e explore a cidade sem fim, em qualquer direção.</div><span class="badge">Exploração · 6-DoF</span></button>
     </div>
     <div class="sub" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;">
       <label style="display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-family:var(--font-mono);font-size:10px;color:#ffb300;border:1px solid #4a3413;background:#241d13;border-radius:8px;padding:7px 10px;">
@@ -311,7 +313,7 @@ body.startMode #colPad,body.startMode #cycPad,body.startMode #pedPad{display:non
     <p class="sub" id="sensorModalMsg" style="color:var(--ink);font-size:13px;line-height:1.5;"></p>
     <div class="poh" id="sensorModalFix" style="font-size:12px;color:var(--ink);background:rgba(53,209,122,.10);border-left-color:var(--green);margin:12px 0;"></div>
     <div style="background:#0d1117;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:var(--font-mono);font-size:11px;color:var(--cyan);word-break:break-all;user-select:all;-webkit-user-select:all;" id="fileUrlBox">
-      file:///sdcard/Download/R22_Checkride_Trainer_3D-v16.html
+      file:///sdcard/Download/R22_Checkride_Trainer_3D-v17.html
     </div>
     <div class="btnrow" style="margin-top:14px;">
       <button class="act go" id="btnCopyFileUrl" style="flex:1;">📋 COPIAR ENDEREÇO file:///</button>
@@ -1236,6 +1238,36 @@ const MISSIONS=[
     ];
   },
   chart:"hover"
+},
+{
+  phased:true, id:"free", num:"11", name:"Voo Livre — Mundo Aberto",
+  desc:"Sem objetivo e sem cronômetro: decole do heliponto e voe para onde quiser. A cidade, as ruas curvas e os campos se formam em volta do helicóptero em qualquer direção, sem fim. Os pedais ficam com você (modo LIVRE 6-DoF) para girar o nariz e mudar de rumo. Termina quando você abrir o MENU — ou se bater.",
+  badge:"Exploração · 6-DoF",
+  targets:[["Objetivo","nenhum — explore"],["Pedais","manuais (Q/E ou barra PEDAIS)"],["Prédios da cidade","cenário, sem colisão"],["RPM rotor","101–104% (verde)"],["Fim","botão MENU"]],
+  poh:"POH Seç. 2: Vne 102 KIAS. Evite a área sombreada do diagrama altura-velocidade e mantenha o RPM no arco verde durante todo o voo.",
+  setup(){
+    heli=newHeli({x:0}); collective=0.30;
+    env=newEnv({windBase:(2+Math.random()*4)*KT*(Math.random()<.5?-1:1),gustSigma:1.0*KT});
+    if(freePrevAuto===null) freePrevAuto=autoCoord;
+    autoCoord=false;
+    const cf=document.getElementById("chkFree6DoF"); if(cf) cf.checked=true;
+    return {padX:0,trees:[],zone:null,slope:0,openWorld:true};
+  },
+  live(dt,st,w){
+    met.t+=dt;
+    met.fAlt=Math.max(met.fAlt||0,st.aglFt);
+    met.fGS=Math.max(met.fGS||0,st.gsKt);
+    met.fDist=(met.fDist||0)+st.gsKt*KT*dt;
+  },
+  score(w){
+    return [
+      m_("Tempo de voo","livre",fmt(met.t)+" s",100,1),
+      m_("Distância percorrida","livre",fmt((met.fDist||0)/1000,1)+" km",100,1),
+      m_("Altura máxima","livre",fmt(met.fAlt||0)+" ft",100,1),
+      m_("Velocidade máxima","≤ 102 kt",fmt(met.fGS||0)+" kt",(met.fGS||0)<=102?100:40,1)
+    ];
+  },
+  chart:"hover"
 }
 ];
 
@@ -1243,6 +1275,14 @@ const MISSIONS=[
    FUNÇÕES DE NAVEGAÇÃO IMEDIATA DO MENU
    ========================================================================= */
 let curMissionIdx=0;
+let freePrevAuto=null;
+function restoreFreeAuto(){
+  if(freePrevAuto===null) return;
+  // Com o acelerômetro ligado os pedais continuam manuais; a escolha antiga volta quando ele for desligado
+  if(tiltEnabled && typeof tiltPrevAuto!=="undefined") tiltPrevAuto=freePrevAuto;
+  else { autoCoord=freePrevAuto; if(autoCoord) pedal=0; const cf=document.getElementById("chkFree6DoF"); if(cf) cf.checked=!autoCoord; }
+  freePrevAuto=null;
+}
 function openBriefing(i){
   curMissionIdx=i;
   const M=MISSIONS[i];
@@ -1268,6 +1308,7 @@ function startMission(){
   failFired=false;
   failAt=(randFail&&M.id!=="start"&&M.id!=="fail")? 15+Math.random()*180 : -1;
   document.body.classList.toggle("startMode",M.id==="start");
+  if(M.id!=="free") restoreFreeAuto();
   mission.world=M.setup();
   endInfo=null;
   tSim=0;
@@ -1281,6 +1322,7 @@ function startMission(){
   if(M.id==="start") syncStartPanel();
 }
 function toMenu(){
+  restoreFreeAuto(); syncMobUI();
   gameState="menu";
   document.body.classList.remove("startMode");
   document.getElementById("briefing").style.display="none";
@@ -2481,7 +2523,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   scene.fog = new THREE.FogExp2(0x9bb8d4, 0.00030);
   if(MODERN) scene.fog.color.setRGB(0.52, 0.69, 0.89);
 
-  const camera = new THREE.PerspectiveCamera(54, VW()/VH(), 0.08, 5200);
+  const camera = new THREE.PerspectiveCamera(54, VW()/VH(), 0.08, 6500);
 
   // =========================================================================
   // 1. CÉU ATMOSFÉRICO DE ALTA RESOLUÇÃO + MAPA DE REFLEXO (ENVIRONMENT MAP)
@@ -2673,13 +2715,13 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   function patchGroundMaterial(mat, avgCol, city){
     mat.onBeforeCompile = (sh)=>{
       sh.uniforms.uFarCol = {value: avgCol};
-      sh.uniforms.uCity = {value: new THREE.Vector4(city.x0, city.x1, city.z0, city.z1)};
-      sh.uniforms.uCityOn = {value: city.on};
+      sh.uniforms.uCityCfg = {value: city};
+      sh.uniforms.uCityR = {value: (Math.min(VW(), VH()) < 700 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) ? 1000 : 1900};
       sh.vertexShader = sh.vertexShader
         .replace("#include <common>", "#include <common>\nvarying vec3 vWPos;")
         .replace("#include <begin_vertex>", "#include <begin_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;");
       sh.fragmentShader = sh.fragmentShader
-        .replace("#include <common>", "#include <common>\nvarying vec3 vWPos; uniform vec3 uFarCol; uniform vec4 uCity; uniform float uCityOn;\n" + GLSL_NOISE)
+        .replace("#include <common>", "#include <common>\nvarying vec3 vWPos; uniform vec3 uFarCol; uniform vec3 uCityCfg; uniform float uCityR;\n" + GLSL_NOISE)
         .replace("#include <map_fragment>", `#include <map_fragment>
 {
   float m1 = gNoise(vWPos.xz * 0.013);
@@ -2690,37 +2732,51 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   diffuseColor.rgb *= 0.70 + 0.36*m1 + 0.26*m2 + 0.12*m3;
   diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.45, 1.16, 0.72), smoothstep(0.58, 0.86, m2) * 0.55);
 
+  // Onde NÃO há cidade: faixa do aeródromo/missões, mar e a montanha da missão 08
   float cAz = abs(vWPos.z);
-  float inCity = uCityOn * step(uCity.z - 7.0, cAz) * step(cAz, uCity.w + 7.0) * step(uCity.x - 7.0, vWPos.x) * step(vWPos.x, uCity.y + 7.0);
+  float strip = step(cAz, 150.0) * step(-520.0, vWPos.x) * step(vWPos.x, 2420.0);
+  float mtnX = uCityCfg.y * step(1440.0, vWPos.x) * step(vWPos.x, 2480.0) * step(cAz, 340.0);
+  float seaX = step(uCityCfg.x, vWPos.x);
+  // Mapa de urbanização (mesma fórmula do código que planta os prédios): centros altos, bairros e zona rural
+  float urb = 0.55 + 0.30*sin(vWPos.x*0.00125 + 0.6)*cos(vWPos.z*0.00105 - 0.4) + 0.22*sin((vWPos.x + vWPos.z)*0.00071 + 2.0);
+  float inCity = uCityCfg.z * (1.0 - strip) * (1.0 - mtnX) * (1.0 - seaX) * smoothstep(0.43, 0.47, urb);
 
   vec2 fq = vWPos.xz / vec2(210.0, 140.0);
   vec2 fcell = floor(fq); vec2 ffr = fract(fq);
   float fh = gHash(fcell + 11.0);
-  float fieldK = smoothstep(110.0, 175.0, cAz) * (1.0 - inCity);
+  float nearStrip = (1.0 - smoothstep(110.0, 175.0, cAz)) * step(-560.0, vWPos.x) * step(vWPos.x, 2460.0);
+  float fieldK = (1.0 - inCity) * (1.0 - nearStrip);
   vec3 crop = mix(vec3(0.80, 1.05, 0.75), vec3(1.55, 1.30, 0.70), smoothstep(0.35, 0.90, fh));
   crop = mix(crop, vec3(1.30, 0.98, 0.72), step(0.88, fh));
   float hedge = 1.0 - smoothstep(0.012, 0.024, min(min(ffr.x, 1.0 - ffr.x), min(ffr.y, 1.0 - ffr.y) * 1.5));
   hedge *= 1.0 - smoothstep(500.0, 1200.0, gDist);
   diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * crop * (1.0 - 0.55*hedge), fieldK * 0.8);
 
-  if(inCity > 0.5){
-    vec2 cq = vec2(vWPos.x - uCity.x, cAz - uCity.z);
+  if(inCity > 0.01){
+    // Malha de ruas "entortada" por ondas suaves: as quadras continuam com ~90 m, mas as ruas fazem curvas
+    vec2 cq = vec2(vWPos.x + 55.0*sin(vWPos.z*0.0040) + 14.0*sin(vWPos.z*0.0110 + 1.3),
+                   vWPos.z + 50.0*sin(vWPos.x*0.0043 + 0.7) + 12.0*sin(vWPos.x*0.0125));
     vec2 cm = mod(cq + 45.0, 90.0) - 45.0;
     float dR = min(abs(cm.x), abs(cm.y));
     float road = 1.0 - smoothstep(6.6, 7.0, dR);
     float walk = 1.0 - smoothstep(9.6, 10.0, dR);
     vec3 lot = vec3(0.115, 0.115, 0.120) * (0.80 + 0.40*m3);
     vec3 asph = vec3(0.028, 0.030, 0.034) * (0.80 + 0.50*m3);
-    float along = abs(cm.x) < abs(cm.y) ? vWPos.z : vWPos.x;
+    float along = abs(cm.x) < abs(cm.y) ? cq.y : cq.x;
     float dash = step(0.5, fract(along / 9.0)) * (1.0 - smoothstep(0.14, 0.24, dR)) * step(7.5, max(abs(cm.x), abs(cm.y)));
     dash *= 1.0 - smoothstep(350.0, 800.0, gDist);
     asph = mix(asph, vec3(0.62, 0.58, 0.40), dash);
-    vec3 cc = mix(lot, vec3(0.30, 0.30, 0.29), walk);
-    diffuseColor.rgb = mix(cc, asph, road);
+    float cFar = smoothstep(uCityR * 0.78, uCityR * 0.98, gDist);
+    vec3 cc = mix(lot, vec3(0.30, 0.30, 0.29), walk * (1.0 - cFar * 0.9));
+    float rH = gHash(floor(cq / 45.0) + 0.5);
+    vec3 roofTone = mix(vec3(0.055, 0.062, 0.075), vec3(0.20, 0.21, 0.23), rH * rH);
+    roofTone = mix(roofTone, vec3(0.16, 0.10, 0.08), step(0.86, gHash(floor(cq / 45.0) + 3.5)));
+    cc = mix(cc, roofTone, cFar * step(0.18, gHash(floor(cq / 45.0) + 7.5)));
+    diffuseColor.rgb = mix(diffuseColor.rgb, mix(cc, asph, road), inCity);
   }
 }`);
     };
-    mat.customProgramCacheKey = ()=>"gnd-macro-v2";
+    mat.customProgramCacheKey = ()=>"gnd-macro-v5";
   }
 
   // Fachada procedural: janelas, lajes, vitrines no térreo e vidro reflexivo calculados no shader.
@@ -3567,7 +3623,8 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   let seaMesh = null, farSeaMesh = null, boatGroup = null, windsockCone = null, hoistLine = null;
   let towerBeacon = null, lighthouseBeacon = null, boatWake = null;
   let trafficCars = [], cloudGroups = [], birds = [], smokePuffs = [], partyBulbs = [], ambSirens = [], papiLights = [];
-  let seaBobbers = [], cityCars = null;
+  let seaBobbers = [], cityCars = null, gndFollow = null, horizonRings = [];
+  const OPEN_GND = 16000, OPEN_REP = 425, OPEN_TILE = OPEN_GND/OPEN_REP;
 
   // Árvore orgânica realista com tronco + 4 volumes irregulares de folhagem em tons naturais
   const treeFoliageMats = [
@@ -3779,9 +3836,9 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   // --- LAGO REFLEXIVO NATURAL AO LADO DO AERÓDROMO ---
   function addLake3D(lx, lz, rx, rz){
     const g = new THREE.Group(); g.position.set(lx, 0.02, lz);
-    const shore = new THREE.Mesh(new THREE.CircleGeometry(1, 32), new THREE.MeshStandardMaterial({color: 0xc2b086, roughness: 0.92}));
+    const shore = new THREE.Mesh(new THREE.CircleGeometry(1, 32), new THREE.MeshStandardMaterial({color: 0xc2b086, roughness: 0.92, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2}));
     shore.rotation.x = -Math.PI/2; shore.scale.set(rx+8, rz+8, 1); shore.receiveShadow = true; g.add(shore);
-    const water = new THREE.Mesh(new THREE.CircleGeometry(1, 32), new THREE.MeshPhysicalMaterial({color: 0x1b5c7a, roughness: 0.08, metalness: 0.28, clearcoat: 1.0, clearcoatRoughness: 0.06}));
+    const water = new THREE.Mesh(new THREE.CircleGeometry(1, 32), new THREE.MeshPhysicalMaterial({color: 0x1b5c7a, roughness: 0.30, metalness: 0.10, clearcoat: 0.3, clearcoatRoughness: 0.35, envMapIntensity: 0.7, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4}));
     water.rotation.x = -Math.PI/2; water.position.y = 0.03; water.scale.set(rx, rz, 1); water.receiveShadow = true; g.add(water);
     worldGroup.add(g);
     // Vegetação ao redor do lago
@@ -3866,7 +3923,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
     for(let i=0; i<32; i++){
       const cg = new THREE.Group();
       const cx = -350 + i*130 + ((i*97)%80);
-      const cy = 230 + ((i*53)%200);
+      const cy = 440 + ((i*53)%260); // base alta: no voo livre não se entra em nuvem sem querer
       const cz = (i%2===0?1:-1) * (110 + ((i*83)%440));
       cg.position.set(cx, cy, cz);
       const k = 0.8 + ((i*37)%10)*0.06;
@@ -3887,11 +3944,24 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   // prédios e árvores instanciados (um único desenho para centenas de cópias) e carros circulando.
   // É só cenário: não entra na física nem nas colisões das missões.
   // =========================================================================
-  const CITY_X0 = -360, CITY_PITCH = 90, CITY_ZIN = 160;
-  function planCity(w){
-    const cols = w.sea ? Math.max(0, Math.floor((w.sea.shore - 80 - CITY_X0)/CITY_PITCH)) : 29;
-    const rows = IS_PHONE ? 4 : 6;
-    return {cols, rows, x0: CITY_X0, x1: CITY_X0 + cols*CITY_PITCH, z0: CITY_ZIN, z1: CITY_ZIN + rows*CITY_PITCH, on: cols > 0 ? 1 : 0};
+  // MUNDO ABERTO: a cidade não é mais um retângulo fixo. Ela é recalculada em volta do helicóptero
+  // toda vez que ele cruza uma quadra, sempre com a mesma "receita" (funções determinísticas),
+  // então um bairro que você deixou para trás estará igual quando voltar.
+  const PITCH = 90;
+  const CITY_R = IS_PHONE ? 1000 : 1900, TREE_R = IS_PHONE ? 380 : 650, CAR_R = 700;
+  const CAP_B = IS_PHONE ? 3200 : 9500, CAP_T = IS_PHONE ? 600 : 1800, CAP_P = 300, CAP_C = IS_PHONE ? 60 : 170;
+  // Deformação da malha (mesmas ondas do shader do solo) e mapa de urbanização
+  const WFX = z=>55*Math.sin(z*0.0040) + 14*Math.sin(z*0.0110 + 1.3);
+  const WFZ = x=>50*Math.sin(x*0.0043 + 0.7) + 12*Math.sin(x*0.0125);
+  const WFZd = x=>50*0.0043*Math.cos(x*0.0043 + 0.7) + 12*0.0125*Math.cos(x*0.0125);
+  const urbanAt = (x, z)=>0.55 + 0.30*Math.sin(x*0.00125 + 0.6)*Math.cos(z*0.00105 - 0.4) + 0.22*Math.sin((x + z)*0.00071 + 2.0);
+  const _gp = {x: 0, z: 0};
+  function gridToWorld(u, v){ let x = u, z = v; for(let k=0; k<4; k++){ x = u - WFX(z); z = v - WFZ(x); } _gp.x = x; _gp.z = z; return _gp; }
+  function cityExcluded(w, x, z){
+    if(Math.abs(z) < 150 && x > -520 && x < 2420) return true;        // faixa do aeródromo e das missões
+    if(w.sea && x > w.sea.shore - 80) return true;                     // mar
+    if(w.terrain && x > 1440 && x < 2480 && Math.abs(z) < 340) return true; // montanha
+    return false;
   }
   const cityTrunkGeo = new THREE.CylinderGeometry(0.22, 0.36, 1, 6); cityTrunkGeo.translate(0, 0.5, 0);
   const cityCrownGeo = new THREE.IcosahedronGeometry(1, 1);
@@ -3899,88 +3969,127 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   const cityCarGeo = new THREE.BoxGeometry(4.2, 1.25, 1.8); cityCarGeo.translate(0, 0.72, 0);
   const cityCarMat = new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 0.28, metalness: 0.35});
   const cityRoofMat = new THREE.MeshStandardMaterial({color: 0x8a929c, roughness: 0.6, metalness: 0.3});
-  const parkGeo = new THREE.PlaneGeometry(68, 68); parkGeo.rotateX(-Math.PI/2);
+  const parkGeo = new THREE.PlaneGeometry(66, 66); parkGeo.rotateX(-Math.PI/2);
   const parkMat = new THREE.MeshStandardMaterial({color: 0x3f6b33, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -1});
+  const _m4 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _q0 = new THREE.Quaternion(), _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _col = new THREE.Color(), _yAxis = new THREE.Vector3(0, 1, 0);
+  let cityFx = null;
 
-  function buildCity3D(w, city){
-    if(!city.on) return;
-    const downtownX = w.party ? -6000 : 780; // na missão da fazenda a região vira bairro baixo
-    const blds = [], roofs = [], trees = [];
-    const m4 = new THREE.Matrix4(), qI = new THREE.Quaternion(), v1 = new THREE.Vector3(), v2 = new THREE.Vector3(), col = new THREE.Color();
-    for(let bi=0; bi<city.cols; bi++) for(let bj=0; bj<city.rows; bj++) for(const side of [-1, 1]){
-      const bx = city.x0 + CITY_PITCH*(bi + 0.5), bzA = city.z0 + CITY_PITCH*(bj + 0.5), bz = side*bzA;
-      if(w.terrain && bx > 1440 && bzA < 340) continue; // deixa a montanha livre
-      const hb = hashN(bi*3 + side, bj*7 + 11);
-      const core = Math.exp(-Math.pow((bx - downtownX)/560, 2) - Math.pow((bzA - 300)/360, 2));
-      if(hb > 0.90){
-        // Quadra-parque: gramado e arvoredo
-        const pk = new THREE.Mesh(parkGeo, parkMat); pk.position.set(bx, 0.03, bz); pk.receiveShadow = true; worldGroup.add(pk);
-        for(let t=0; t<9; t++) trees.push([bx + (hashN(bx + t, bz) - 0.5)*58, bz + (hashN(bx, bz + t*3.1) - 0.5)*58, 7 + hashN(t, bx)*7]);
+  function initCity3D(w){
+    const mk = (geo, mat, cap, cast, recv)=>{
+      const m = new THREE.InstancedMesh(geo, mat, cap);
+      m.count = 0; m.frustumCulled = false; m.castShadow = cast; m.receiveShadow = recv;
+      m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      worldGroup.add(m); return m;
+    };
+    const c = cityFx = {
+      w, ci: 1e9, cj: 1e9,
+      blds: mk(unitBox, facadeMat, CAP_B, true, true),
+      roofs: mk(unitBox, cityRoofMat, Math.ceil(CAP_B*0.8), false, false),
+      trunks: mk(cityTrunkGeo, trunkMat, CAP_T, false, false),
+      crowns: mk(cityCrownGeo, cityCrownMat, CAP_T, !IS_PHONE, true),
+      parks: mk(parkGeo, parkMat, CAP_P, false, true),
+      cars: mk(cityCarGeo, cityCarMat, CAP_C, !IS_PHONE, false),
+      carList: []
+    };
+    // cores: copas e carros recebem cor por instância
+    for(let i=0; i<CAP_T; i++){ const g = hashN(i*1.3, 7.7); _col.setRGB(0.10 + g*0.07, 0.24 + g*0.14, 0.09 + g*0.05); c.crowns.setColorAt(i, _col); }
+    const carCols = [[0.72,0.08,0.07],[0.07,0.20,0.48],[0.80,0.82,0.84],[0.05,0.06,0.08],[0.62,0.40,0.05],[0.30,0.31,0.33],[0.85,0.85,0.80]];
+    for(let k=0; k<CAP_C; k++){
+      const cc = carCols[(k*5) % carCols.length]; _col.setRGB(cc[0], cc[1], cc[2]); c.cars.setColorAt(k, _col);
+      c.carList.push({u: (hashN(k, 1.1) - 0.5)*2*CAR_R, vi: (k % 8) - 4, dir: (k % 2) ? 1 : -1, spd: 9 + hashN(k, 3.3)*8});
+    }
+    c.cars.count = CAP_C;
+    updateCity3D(heli ? heli.x : 0, heli ? heli.z : 0, true);
+  }
+
+  function updateCity3D(px, pz, force){
+    const c = cityFx; if(!c) return;
+    const pu = px + WFX(pz), pv = pz + WFZ(px);
+    const ci = Math.floor(pu/PITCH), cj = Math.floor(pv/PITCH);
+    if(!force && ci === c.ci && cj === c.cj) return;
+    c.ci = ci; c.cj = cj;
+    const w = c.w, N = Math.ceil(CITY_R/PITCH) + 1, R2 = CITY_R*CITY_R;
+    let nb = 0, nr = 0, nt = 0, np = 0;
+    const capR = c.roofs.instanceMatrix.count;
+    const addTree = (x, z, h)=>{
+      if(nt >= CAP_T) return;
+      const r = h*0.34;
+      _m4.compose(_v1.set(x, 0, z), _q0, _v2.set(1, h*0.55, 1)); c.trunks.setMatrixAt(nt, _m4);
+      _m4.compose(_v1.set(x, h*0.72, z), _q0, _v2.set(r, r*1.15, r)); c.crowns.setMatrixAt(nt, _m4);
+      nt++;
+    };
+    for(let bi = ci - N; bi <= ci + N; bi++) for(let bj = cj - N; bj <= cj + N; bj++){
+      const u0 = (bi + 0.5)*PITCH, v0 = (bj + 0.5)*PITCH;
+      const g0 = gridToWorld(u0, v0), bx = g0.x, bz = g0.z;
+      const dx = bx - px, dz = bz - pz, d2 = dx*dx + dz*dz;
+      if(d2 > R2) continue;
+      if(cityExcluded(w, bx, bz)) continue;
+      const urb = urbanAt(bx, bz), d = Math.sqrt(d2);
+      if(urb < 0.47){
+        // Zona rural: capões de árvores perto do helicóptero
+        if(d < TREE_R && hashN(bi*1.7 + 3, bj*2.9 + 1) > 0.45)
+          for(let t=0; t<5; t++) addTree(bx + (hashN(bi + t*1.3, bj) - 0.5)*74, bz + (hashN(bi, bj + t*3.1) - 0.5)*74, 7 + hashN(t + bi, bj*1.9)*8);
         continue;
       }
+      const rot = Math.atan(WFZd(bx)), cs = Math.cos(rot), sn = Math.sin(rot);
+      _q.setFromAxisAngle(_yAxis, rot);
+      // Arborização das calçadas (só perto: é detalhe de baixa altura)
+      if(d < TREE_R){
+        for(const ou of [-22, 22]) for(const ov of [-36.4, 36.4]){
+          const gt = gridToWorld(u0 + ou, v0 + ov);
+          if(!cityExcluded(w, gt.x, gt.z)) addTree(gt.x, gt.z, 5.5 + hashN(bi*2.1 + ou, bj*1.7 + ov)*4);
+        }
+      }
+      const hb = hashN(bi*3.1 + 0.7, bj*7.3 + 11);
+      if(hb > 0.91){
+        // Quadra-parque
+        if(np < CAP_P){ _m4.compose(_v1.set(bx, 0.03, bz), _q, _v2.set(1, 1, 1)); c.parks.setMatrixAt(np++, _m4); }
+        if(d < TREE_R*1.6) for(let t=0; t<8; t++) addTree(bx + (hashN(bi + t, bj*1.3) - 0.5)*54, bz + (hashN(bi*1.1, bj + t*3.1) - 0.5)*54, 7 + hashN(t, bi + bj)*7);
+        continue;
+      }
+      const core = clamp((urb - 0.62)/0.38, 0, 1);
+      const edge = clamp((CITY_R - d)/(CITY_R*0.16), 0, 1); // na borda do raio os prédios "nascem" baixos: não pipocam do nada
+      if(edge < 0.04) continue;
       for(let sx=0; sx<2; sx++) for(let sz=0; sz<2; sz++){
-        const r1 = hashN(bx + sx*13.3, bz + sz*7.7), r2 = hashN(bx*0.7 + sx*5.1, bz*1.3 + sz*3.9), r3 = hashN(bx + sx*1.7 + 4, bz - sz*2.3);
-        if(r1 < 0.10) continue;
-        const fw = 18 + r2*12, fd = 18 + r3*12;
-        const tall = r1 < 0.12 + core*0.75;
-        const h = tall ? 28 + r2*r3*150*core + r3*22 : 6.5 + r3*13;
-        const px = bx + (sx - 0.5)*35 + (r2 - 0.5)*4, pz = bz + (sz - 0.5)*35 + (r3 - 0.5)*4;
-        blds.push([px, pz, fw, h, fd]);
-        if(h > 55 && r2 > 0.4) blds.push([px, pz, fw*0.6, h + 8 + r3*14, fd*0.6]); // coroamento recuado
-        roofs.push([px + fw*0.2, h, pz - fd*0.2, 3 + r1*4, 1.2 + r2*1.6, 3 + r3*3]);
+        const r1 = hashN(bi*4.3 + sx*13.3, bj*2.7 + sz*7.7), r2 = hashN(bi*0.7 + sx*5.1 + 9, bj*1.3 + sz*3.9), r3 = hashN(bi*1.9 + sx*1.7 + 4, bj*3.3 - sz*2.3);
+        if(r1 < 0.07 || nb >= CAP_B - 1) continue;
+        const gl = gridToWorld(u0 + (sx - 0.5)*35 + (r2 - 0.5)*3, v0 + (sz - 0.5)*35 + (r3 - 0.5)*3);
+        const lx = gl.x, lz = gl.z;
+        if(cityExcluded(w, lx, lz)) continue;
+        const fw = 16 + r2*10, fd = 16 + r3*10;
+        const tall = r1 < 0.14 + core*0.80;
+        const h = (tall ? 24 + r2*r3*190*core + r3*26 + core*18 : 6.5 + r3*13) * edge;
+        _m4.compose(_v1.set(lx, 0, lz), _q, _v2.set(fw, h, fd)); c.blds.setMatrixAt(nb++, _m4);
+        if(h > 55 && r2 > 0.35){ _m4.compose(_v1.set(lx, 0, lz), _q, _v2.set(fw*0.6, h + 8 + r3*16, fd*0.6)); c.blds.setMatrixAt(nb++, _m4); }
+        if(nr < capR){
+          const ox = fw*0.2, oz = -fd*0.2;
+          _m4.compose(_v1.set(lx + ox*cs + oz*sn, h, lz - ox*sn + oz*cs), _q, _v2.set(3 + r1*4, 1.2 + r2*1.6, 3 + r3*3)); c.roofs.setMatrixAt(nr++, _m4);
+        }
       }
     }
-    if(blds.length){
-      const im = new THREE.InstancedMesh(unitBox, facadeMat, blds.length);
-      blds.forEach((b, i)=>{ m4.compose(v1.set(b[0], 0, b[1]), qI, v2.set(b[2], b[3], b[4])); im.setMatrixAt(i, m4); });
-      im.castShadow = true; im.receiveShadow = true; worldGroup.add(im);
-      const rm = new THREE.InstancedMesh(unitBox, cityRoofMat, roofs.length);
-      roofs.forEach((b, i)=>{ m4.compose(v1.set(b[0], b[1], b[2]), qI, v2.set(b[3], b[4], b[5])); rm.setMatrixAt(i, m4); });
-      rm.castShadow = false; worldGroup.add(rm);
-    }
+    c.blds.count = nb; c.roofs.count = nr; c.trunks.count = nt; c.crowns.count = nt; c.parks.count = np;
+    c.blds.instanceMatrix.needsUpdate = true; c.roofs.instanceMatrix.needsUpdate = true;
+    c.trunks.instanceMatrix.needsUpdate = true; c.crowns.instanceMatrix.needsUpdate = true; c.parks.instanceMatrix.needsUpdate = true;
+  }
 
-    // Arborização das calçadas nas ruas mais próximas do corredor de voo
-    const treeRows = IS_PHONE ? 1 : 3;
-    for(let j=0; j<=treeRows; j++) for(const side of [-1, 1]) for(const off of [-8.6, 8.6]){
-      const tz = side*(city.z0 + CITY_PITCH*j + off);
-      for(let x = city.x0 + 16; x < city.x1 - 10; x += 30){
-        const m = ((x - city.x0) % CITY_PITCH + CITY_PITCH) % CITY_PITCH;
-        if(m < 12 || m > CITY_PITCH - 12) continue; // esquina livre
-        if(w.terrain && x > 1440) continue;
-        trees.push([x, tz, 5.5 + hashN(x, tz)*4]);
-      }
+  // Trânsito: os carros vivem na malha de ruas e acompanham o helicóptero (reaparecem do outro lado ao sair do raio)
+  function updateCityCars(px, pz){
+    const c = cityFx; if(!c) return;
+    const pu = px + WFX(pz), pv = pz + WFZ(px), cj = Math.floor(pv/PITCH);
+    for(let k=0; k<c.carList.length; k++){
+      const car = c.carList[k];
+      car.u += car.dir*car.spd*0.016;
+      while(car.u - pu > CAR_R) car.u -= 2*CAR_R;
+      while(car.u - pu < -CAR_R) car.u += 2*CAR_R;
+      while(car.vi - cj > 4) car.vi -= 8;
+      while(car.vi - cj < -4) car.vi += 8;
+      const g = gridToWorld(car.u, car.vi*PITCH + car.dir*2.7);
+      const hide = cityExcluded(c.w, g.x, g.z) || urbanAt(g.x, g.z) < 0.47;
+      _q.setFromAxisAngle(_yAxis, Math.atan(WFZd(g.x)));
+      _m4.compose(_v1.set(g.x, hide ? -50 : 0, g.z), _q, _v2.set(1, 1, 1));
+      c.cars.setMatrixAt(k, _m4);
     }
-    if(trees.length){
-      const tr = new THREE.InstancedMesh(cityTrunkGeo, trunkMat, trees.length);
-      const cr = new THREE.InstancedMesh(cityCrownGeo, cityCrownMat, trees.length);
-      trees.forEach((t, i)=>{
-        const h = t[2], r = h*0.34;
-        m4.compose(v1.set(t[0], 0, t[1]), qI, v2.set(1, h*0.55, 1)); tr.setMatrixAt(i, m4);
-        m4.compose(v1.set(t[0], h*0.72, t[1]), qI, v2.set(r, r*1.15, r)); cr.setMatrixAt(i, m4);
-        const g = hashN(t[0]*1.3, t[1]*0.7);
-        col.setRGB(0.10 + g*0.07, 0.24 + g*0.14, 0.09 + g*0.05); cr.setColorAt(i, col);
-      });
-      cr.castShadow = !IS_PHONE; cr.receiveShadow = true;
-      worldGroup.add(tr); worldGroup.add(cr);
-    }
-
-    // Trânsito nas avenidas paralelas ao voo (as duas mais próximas de cada lado)
-    const carCols = [[0.72,0.08,0.07],[0.07,0.20,0.48],[0.80,0.82,0.84],[0.05,0.06,0.08],[0.62,0.40,0.05],[0.30,0.31,0.33],[0.85,0.85,0.80]];
-    const lanes = [];
-    for(let j=0; j<2; j++) for(const side of [-1, 1]) for(const dir of [-1, 1]) lanes.push({z: side*(city.z0 + CITY_PITCH*j) + dir*2.7, dir});
-    const perLane = IS_PHONE ? 6 : 14;
-    const cm = new THREE.InstancedMesh(cityCarGeo, cityCarMat, lanes.length*perLane);
-    const list = [];
-    lanes.forEach((ln, li)=>{
-      for(let k=0; k<perLane; k++){
-        const idx = li*perLane + k;
-        const c = carCols[(li*3 + k*5) % carCols.length];
-        col.setRGB(c[0], c[1], c[2]); cm.setColorAt(idx, col);
-        list.push({x: city.x0 + (city.x1 - city.x0)*hashN(li + 1.7, k*2.3), z: ln.z, dir: ln.dir, spd: 9 + hashN(k, li)*8});
-      }
-    });
-    cm.castShadow = !IS_PHONE; cm.frustumCulled = false; worldGroup.add(cm);
-    cityCars = {mesh: cm, list, x0: city.x0, x1: city.x1, m4};
+    c.cars.instanceMatrix.needsUpdate = true;
   }
 
   // =========================================================================
@@ -4105,19 +4214,20 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
       worldGroup.remove(ch);
       if(ch.isInstancedMesh && ch.dispose) ch.dispose();
     }
-    seaBobbers = []; cityCars = null;
+    seaBobbers = []; cityCars = null; cityFx = null; gndFollow = null; horizonRings = [];
     seaMesh = null; farSeaMesh = null; boatGroup = null; windsockCone = null; hoistLine = null;
     towerBeacon = null; lighthouseBeacon = null; boatWake = null;
     trafficCars = []; cloudGroups = []; birds = []; smokePuffs = []; partyBulbs = []; ambSirens = []; papiLights = [];
     const w = mission ? mission.world : {padX:0,trees:[],zone:null};
 
-    const city = planCity(w);
+    const city = new THREE.Vector3(w.sea ? w.sea.shore - 80 : 1e9, w.terrain ? 1 : 0, 1);
     const gndMat = new THREE.MeshStandardMaterial({
       map: grassPBR.diff, bumpMap: grassPBR.bump, bumpScale: 0.18, roughness: 0.92, metalness: 0.0
     });
     patchGroundMaterial(gndMat, grassPBR.avg, city);
 
     if(w.sea){
+      grassPBR.diff.repeat.set(170, 85); grassPBR.bump.repeat.set(170, 85);
       const landLen = w.sea.shore + 2200;
       const gnd = new THREE.Mesh(new THREE.PlaneGeometry(landLen, 3200), gndMat);
       gnd.rotation.x = -Math.PI/2; gnd.position.set(w.sea.shore - landLen/2 - 15, 0, 0); gnd.receiveShadow = true; worldGroup.add(gnd);
@@ -4132,8 +4242,11 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
       const seabed = new THREE.Mesh(new THREE.PlaneGeometry(3400, 3200), new THREE.MeshStandardMaterial({color: 0x072238, roughness: 0.95}));
       seabed.rotation.x = -Math.PI/2; seabed.position.set(w.sea.shore + 1700, -8.0, 0); worldGroup.add(seabed);
     } else {
-      const gnd = new THREE.Mesh(new THREE.PlaneGeometry(6400, 3200), gndMat);
+      // Chão "infinito": um plano grande que anda junto com o helicóptero em passos de um ladrilho de textura
+      grassPBR.diff.repeat.set(OPEN_REP, OPEN_REP); grassPBR.bump.repeat.set(OPEN_REP, OPEN_REP);
+      const gnd = new THREE.Mesh(new THREE.PlaneGeometry(OPEN_GND, OPEN_GND), gndMat);
       gnd.rotation.x = -Math.PI/2; gnd.receiveShadow = true; worldGroup.add(gnd);
+      gndFollow = gnd;
     }
 
     // Pista de asfalto PBR realista com bump map e marcações aeronáuticas
@@ -4331,6 +4444,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
         envMapIntensity: 0.75,
         specularIntensity: 0.55
       });
+      farSeaMat.color.setRGB(0.028, 0.20, 0.40);
       patchSeaMaterial(farSeaMat);
       farSeaMesh = new THREE.Mesh(new THREE.PlaneGeometry(4600, 4200), farSeaMat);
       farSeaMesh.rotation.x = -Math.PI/2;
@@ -4402,7 +4516,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
     }
     ridgeGeo.computeVertexNormals();
     const ridgeMesh = new THREE.Mesh(ridgeGeo, new THREE.MeshStandardMaterial({color: 0x4d6780, roughness: 0.96, side: THREE.BackSide}));
-    ridgeMesh.position.set(900, 75, 0);
+    ridgeMesh.position.set(900, 75, 0); horizonRings.push(ridgeMesh);
     worldGroup.add(ridgeMesh);
 
     // Segunda camada de montanhas mais altas e distantes (profundidade atmosférica)
@@ -4417,17 +4531,18 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
     }
     farRidgeGeo.computeVertexNormals();
     const farRidge = new THREE.Mesh(farRidgeGeo, new THREE.MeshStandardMaterial({color: 0x7392b0, roughness: 0.98, side: THREE.BackSide}));
-    farRidge.position.set(900, 140, 0);
+    farRidge.position.set(900, 140, 0); horizonRings.push(farRidge);
     worldGroup.add(farRidge);
 
     addAmbientClouds3D();
     addAmbientBirds3D();
-    buildCity3D(w, city);
+    initCity3D(w);
     if(w.sea) addSeaLife3D(w);
   }
 
   window.rebuildWorld3D = rebuildWorld3D;
-  window._r22dbg = {scene, sunLight, renderer, worldGroup};
+  window._r22dbg = {scene, sunLight, renderer, worldGroup, updateCity3D,
+    forceSize(w, h){ renderer.setPixelRatio(1); renderer.setSize(w, h, false); camera.aspect = w/h; camera.updateProjectionMatrix(); buildPost(); }};
   rebuildWorld3D();
 
   let camOrbitAz = 0, camOrbitEl = 0.24, draggingCam = false, lastPt = {x:0,y:0};
@@ -4444,6 +4559,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   });
   window.addEventListener("pointerup", ()=>{ draggingCam = false; });
   window.addEventListener("resize", ()=>{
+    if(VW() < 2 || VH() < 2) return; // janela minimizada/aba escondida: não recalcula com tamanho zero
     camera.aspect = VW()/VH(); camera.updateProjectionMatrix();
     renderer.setSize(VW(), VH());
     buildPost();
@@ -4616,7 +4732,9 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
     }
     for(const cl of cloudGroups){
       cl.mesh.position.x += cl.spd * 0.016;
-      if(cl.mesh.position.x > 3600) cl.mesh.position.x = -500;
+      // céu sem fim: a nuvem que ficou para trás reaparece à frente
+      if(cl.mesh.position.x - heli.x > 2400) cl.mesh.position.x -= 4800; else if(cl.mesh.position.x - heli.x < -2400) cl.mesh.position.x += 4800;
+      if(cl.mesh.position.z - heli.z > 1400) cl.mesh.position.z -= 2800; else if(cl.mesh.position.z - heli.z < -1400) cl.mesh.position.z += 2800;
     }
     for(const bd of birds){
       bd.ang += bd.spd * 0.016;
@@ -4771,17 +4889,11 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
       b.mesh.rotation.z = (waveY(b.x + 3, b.z) - waveY(b.x - 3, b.z))*0.16*b.rk;
       b.mesh.rotation.x = Math.sin(tSim*0.9 + b.ph)*0.07*b.rk;
     }
-    if(cityCars){
-      const cc = cityCars;
-      for(let i=0; i<cc.list.length; i++){
-        const c = cc.list[i];
-        c.x += c.dir*c.spd*0.016;
-        if(c.x > cc.x1) c.x = cc.x0; else if(c.x < cc.x0) c.x = cc.x1;
-        cc.m4.makeTranslation(c.x, 0, c.z);
-        cc.mesh.setMatrixAt(i, cc.m4);
-      }
-      cc.mesh.instanceMatrix.needsUpdate = true;
-    }
+    if(gndFollow) gndFollow.position.set(Math.round(heli.x/OPEN_TILE)*OPEN_TILE, 0, Math.round(heli.z/OPEN_TILE)*OPEN_TILE);
+    // As serras ficam sempre no horizonte: andam junto, como um pano de fundo
+    for(const hr of horizonRings){ hr.position.x = heli.x + 900*Math.exp(-Math.abs(heli.x)/4000); hr.position.z = heli.z; }
+    updateCity3D(heli.x, heli.z, false);
+    updateCityCars(heli.x, heli.z);
     if(hoistLine){
       if(mission&&mission.id==="sea"&&met&&met.phase===1&&met.hoist>0.05&&!heli.onGround){
         hoistLine.visible = true;
@@ -4796,9 +4908,9 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
     bellyFloor.visible = (camMode === 2);
     update3DPanelTexture();
 
-    const targetFov = (camMode === 2) ? 78 : 54;
-    if(Math.abs(camera.fov - targetFov) > 0.1){
-      camera.fov = targetFov;
+    const targetFov = (camMode === 2) ? 78 : 54, targetNear = (camMode === 2) ? 0.08 : 0.6;
+    if(Math.abs(camera.fov - targetFov) > 0.1 || camera.near !== targetNear){
+      camera.fov = targetFov; camera.near = targetNear;
       camera.updateProjectionMatrix();
     }
 
