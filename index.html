@@ -114,7 +114,11 @@ body.freeMode #pedPad{display:block;}
   pointer-events:auto;z-index:45;flex-wrap:wrap;justify-content:center;max-width:96vw;
   transition:transform .22s ease, opacity .22s ease;}
 body.hideBottomBar #btnRow{transform:translate(-50%, 130%);opacity:0;pointer-events:none;}
-body.tiltMode.hideBottomBar #cycPad{opacity:0.18;}
+/* Modo acelerômetro: o cíclico vai no sensor, então o bloco da direita vira só PEDAIS */
+body.tiltMode #cycPad{height:92px;min-height:92px;max-height:92px;}
+body.tiltMode #cycPad .cycSide.t,body.tiltMode #cycPad .cycSide.b,body.tiltMode #cycCenterH{display:none;}
+body.tiltMode #cycKnob{background:radial-gradient(circle at 35% 30%,#ffd978,#e09a00);box-shadow:0 0 14px rgba(255,179,0,.45);}
+body.tiltMode #pedPad{display:none;}
 #btnToggleBar{position:fixed;left:50%;bottom:4px;transform:translateX(-50%);z-index:50;
   border:1px solid rgba(120,140,165,.35);border-radius:10px;background:rgba(12,16,22,.72);
   color:var(--dim);font-family:var(--font-disp);font-size:9.5px;letter-spacing:.08em;
@@ -173,11 +177,11 @@ body.startMode #colPad,body.startMode #cycPad,body.startMode #pedPad{display:non
     <div id="pedKnob"></div>
   </div>
   <div class="pad" id="cycPad">
-    <div class="padLabel">CÍCLICO 3D</div>
+    <div class="padLabel" id="cycLabel">CÍCLICO 3D</div>
     <div class="cycSide t">▲ FRENTE (NARIZ ↓)</div>
     <div class="cycSide b">▼ ATRÁS (FLARE ↑)</div>
-    <div class="cycSide l">◀ ESQ</div>
-    <div class="cycSide r">DIR ▶</div>
+    <div class="cycSide l" id="cycL">◀ ESQ</div>
+    <div class="cycSide r" id="cycR">DIR ▶</div>
     <div id="cycCenterV"></div>
     <div id="cycCenterH"></div>
     <div id="cycKnob"></div>
@@ -512,15 +516,24 @@ function showSensorHelpModal(){
 }
 
 let tiltWakeLock = null;
+let tiltPrevAuto = null;
+function setAutoCoord(v){
+  autoCoord = v;
+  if(v) pedal = 0;
+  const cf = document.getElementById("chkFree6DoF");
+  if(cf) cf.checked = !autoCoord;
+}
 function enableTiltControl(on){
   if(!on){
     tiltEnabled = false;
+    if(tiltPrevAuto !== null){ setAutoCoord(tiltPrevAuto); tiltPrevAuto = null; }
     try{ if(tiltWakeLock){ tiltWakeLock.release(); tiltWakeLock = null; } }catch(_){}
     syncMobUI();
     return;
   }
   const startAndCheck = ()=>{
     activateTiltListeners();
+    if(!tiltEnabled && tiltPrevAuto === null){ tiltPrevAuto = autoCoord; setAutoCoord(false); pedal = 0; }
     tiltEnabled = true;
     tiltNeedsCalibration = true;
     calibrateTilt();
@@ -1316,6 +1329,12 @@ bindPad(cycPad,e=>{
   const r=cycPad.getBoundingClientRect();
   const tx=clamp((e.clientX-r.left)/r.width,0,1);
   const ty=clamp((e.clientY-r.top)/r.height,0,1);
+  if(tiltEnabled){
+    // Com o cíclico no acelerômetro, este bloco comanda só os pedais (esquerda/direita)
+    pedal=clamp((tx-0.5)*2.2,-1,1);
+    syncMobUI();
+    return;
+  }
   // Topo (ty=0) = cíclico para FRENTE (nariz desce, cyclic < 0)
   // Base (ty=1) = cíclico para TRÁS / FLARE (nariz sobe, cyclic > 0)
   cyclic=clamp((ty-0.5)*2.2,-1,1);
@@ -1337,8 +1356,19 @@ function syncMobUI(){
   colKnob.style.bottom=`calc(${p}% - 11px)`;
   colPct.textContent=fmt(p)+"%";
   colTick.style.bottom="50.5%";
-  cycKnob.style.top=(50+cyclic*38)+"%";
-  cycKnob.style.left=(50+cyclicLat*38)+"%";
+  if(tiltEnabled){
+    cycKnob.style.top="58%";
+    cycKnob.style.left=(50+pedal*38)+"%";
+  } else {
+    cycKnob.style.top=(50+cyclic*38)+"%";
+    cycKnob.style.left=(50+cyclicLat*38)+"%";
+  }
+  const cLb=document.getElementById("cycLabel");
+  if(cLb){
+    cLb.textContent=tiltEnabled?(autoCoord?"PEDAIS (AUTOMÁTICOS)":"PEDAIS"):"CÍCLICO 3D";
+    document.getElementById("cycL").textContent=tiltEnabled?"◀ PEDAL ESQ":"◀ ESQ";
+    document.getElementById("cycR").textContent=tiltEnabled?"PEDAL DIR ▶":"DIR ▶";
+  }
   pedKnob.style.left=(50+pedal*40)+"%";
   const bT=document.getElementById("bThr");
   bT.innerHTML=engineOn?"CORTAR<br>MOTOR":"RESTAURAR<br>MOTOR";
