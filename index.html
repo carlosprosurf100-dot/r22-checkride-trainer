@@ -237,7 +237,7 @@ body.startMode #colPad,body.startMode #cycPad,body.startMode #pedPad{display:non
 
 <div class="overlay" id="menu">
   <div class="card">
-    <h1>R22 Checkride Trainer 3D v17<small style="color:#35d17a">VERSÃO 17 · mundo aberto, ruas curvas e missão Voo Livre</small><small>Física real · Cenário Rico & Referência de Altura · Robinson R22 Beta II</small></h1>
+    <h1>R22 Checkride Trainer 3D v17<small style="color:#35d17a">VERSÃO 17.1 · cíclico macio · estol só tira sustentação</small><small>Física real · Cenário Rico & Referência de Altura · Robinson R22 Beta II</small></h1>
     <p class="sub">Toque em qualquer missão abaixo para abrir o briefing ou inicie direto no botão rápido:</p>
     <div class="quickStartRow">
       <button class="act go" onclick="window._quickStart(1)">▶ DECOLAR AGORA (MISSÃO 01 — PAIRADO)</button>
@@ -1709,10 +1709,16 @@ function physStep(dt){
     }
   } else h.stallT=0;
 
+  // Cíclico "macio": o comando do piloto chega ao rotor por um amortecedor de ~0,10 s (sem degraus),
+  // e a taxa de arfagem/rolagem acompanha com um pouco mais de calma. O curso total do comando não mudou.
+  const kStick=1-Math.exp(-dt/0.10);
+  h.cycS=(h.cycS===undefined)?cyclic:h.cycS+(cyclic-h.cycS)*kStick;
+  h.latS=(h.latS===undefined)?cyclicLat:h.latS+(cyclicLat-h.latS)*kStick;
+
   // Rolagem lateral (cíclico lateral) sempre ativa para permitir voo para os lados e curvas!
-  const pTarget=cyclicLat*1.45;
-  h.p+=(pTarget-h.p)*clamp(9*dt,0,1);
-  if(Math.abs(cyclicLat)<0.03) h.p+=(0-h.p)*clamp(11*dt,0,1);
+  const pTarget=h.latS*1.45;
+  h.p+=(pTarget-h.p)*clamp(7.5*dt,0,1);
+  if(Math.abs(h.latS)<0.03) h.p+=(0-h.p)*clamp(8*dt,0,1);
   h.p-=h.p*0.35*dt;
   h.roll=clamp(h.roll+h.p*dt, d2r(-55), d2r(55));
 
@@ -1749,10 +1755,10 @@ function physStep(dt){
   if(!h.onGround && h.nz<0.32 && pushover && Math.abs(h.vx)>12){ h.lowGt+=dt; } else h.lowGt=Math.max(0,h.lowGt-dt*2.5);
   if(h.lowGt>0.7 && !h.crashed){ crash("LOW-G / MAST BUMPING — pushover proibido (SFAR 73)"); }
 
-  const qMax=1.55, resp=9.5;
-  const qT=cyclic*qMax;
+  const qMax=1.55, resp=7.5;
+  const qT=h.cycS*qMax;
   h.q+=(qT-h.q)*clamp(resp*dt,0,1);
-  if(Math.abs(cyclic)<0.03) h.q+=(0-h.q)*clamp(13*dt,0,1);
+  if(Math.abs(h.cycS)<0.03) h.q+=(0-h.q)*clamp(9*dt,0,1);
   h.q-=h.q*0.4*dt;
   h.pitch=clamp(h.pitch+h.q*dt,d2r(-65),d2r(65));
 
@@ -1770,7 +1776,12 @@ function physStep(dt){
 
   if(h.rpm>113 && !h.crashed) crash("ROTOR OVERSPEED — acima de 110% power-off");
   if(iasK>VNE+16 && !h.crashed) crash("EXCEDEU Vne (102 KIAS) — falha estrutural");
-  if(h.rpm<74 && !h.onGround && !h.crashed) crash("STALL DE ROTOR — RPM abaixo de 74%, irrecuperável");
+  // Estol de rotor: NÃO encerra mais o voo. Abaixo de 80% de RPM a sustentação já cai sozinha (stallK, acima),
+  // chegando a zero perto de 64%. O piloto sente o helicóptero afundar e ainda pode recuperar baixando o coletivo.
+  if(h.rpm<80 && !h.onGround && !h.crashed){
+    if(!h.stallWarn){ h.stallWarn=true; ev("ESTOL DE ROTOR — sustentação caindo. Coletivo TODO embaixo para recuperar o RPM!"); }
+    shake=Math.max(shake,(80-h.rpm)*0.22);
+  } else if(h.rpm>86) h.stallWarn=false;
 
   groundContact(dt,iasK);
 }
@@ -2409,6 +2420,7 @@ function drawAdvisor(st){
     else if(!su.gov) msg="12 · GOVERNADOR — ON e manete cheia";
     else msg="Estabilize 104% por 3 s — quase pronto", col="#35d17a";
   }
+  else if(heli.rpm<80&&!heli.onGround){ msg="ESTOL DE ROTOR — sustentação reduzida · coletivo TODO embaixo"; col="#ff5449"; }
   else if(!engineOn){
     if(heli.rpm<90) msg="RPM BAIXO — coletivo mais embaixo AGORA", col="#ff5449";
     else if(altF<=55&&altF>12&&cyclic<0.25) msg="FLARE! (~40 ft) — cíclico atrás", col="#ffb300";
