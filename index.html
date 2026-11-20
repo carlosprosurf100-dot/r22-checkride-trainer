@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>R22 Checkride Trainer 3D v17 — Física Real & Cenário Rico</title>
+<title>R22 Checkride Trainer 3D v18 — Física Real & Cenário Rico</title>
 <style>
 :root{
   --panel:#12161c; --panel2:#1a212b; --line:#2b3543;
@@ -237,12 +237,12 @@ body.startMode #colPad,body.startMode #cycPad,body.startMode #pedPad{display:non
 
 <div class="overlay" id="menu">
   <div class="card">
-    <h1>R22 Checkride Trainer 3D v17<small style="color:#35d17a">VERSÃO 17.1 · cíclico macio · estol só tira sustentação</small><small>Física real · Cenário Rico & Referência de Altura · Robinson R22 Beta II</small></h1>
-    <p class="sub">Toque em qualquer missão abaixo para abrir o briefing ou inicie direto no botão rápido:</p>
+    <h1>R22 Checkride Trainer 3D v18<small style="color:#35d17a">VERSÃO 18 · mapa novo: cidade, serra e mar · missões de rota livre</small><small>Física real · Cenário Rico & Referência de Altura · Robinson R22 Beta II</small></h1>
+    <p class="sub">Missões 00–06 são treinos de manobra na pista. Missões 07–12 acontecem no mundo aberto: cidade, serra, litoral e mar, com rota livre.</p>
     <div class="quickStartRow">
       <button class="act go" onclick="window._quickStart(1)">▶ DECOLAR AGORA (MISSÃO 01 — PAIRADO)</button>
       <button class="act ghost" onclick="window._quickStart(0)">⚡ PARTIDA FRIA (MISSÃO 00)</button>
-      <button class="act ghost" style="color:#4fd6ff;border-color:#1e4b5f" onclick="window._quickStart(11)">🌍 VOO LIVRE — MUNDO ABERTO</button>
+      <button class="act ghost" style="color:#4fd6ff;border-color:#1e4b5f" onclick="window._quickStart(12)">🌍 VOO LIVRE — MUNDO ABERTO</button>
     </div>
     <div class="mgrid" id="missionGrid">
       <button class="mcard" onclick="window._openBriefing(0)"><div class="num">MISSÃO 00</div><div class="nm">Acionamento — Partida do Beta II</div><div class="ds">Cabine fria, checklist completo do POH no console 3D.</div><span class="badge">Procedimentos · Partida</span></button>
@@ -252,11 +252,12 @@ body.startMode #colPad,body.startMode #cycPad,body.startMode #pedPad{display:non
       <button class="mcard" onclick="window._openBriefing(4)"><div class="num">MISSÃO 04</div><div class="nm">Parada Rápida</div><div class="ds">Acelere a 45 kt baixo e desacelere coordenado antes da linha.</div><span class="badge">Coordenação · Atitude</span></button>
       <button class="mcard" onclick="window._openBriefing(5)"><div class="num">MISSÃO 05</div><div class="nm">Autorrotação Programada</div><div class="ds">700 ft / 70 KIAS. Corte o motor, planeie a 65 KIAS e faça o flare.</div><span class="badge">Emergência · POH Seç. 3</span></button>
       <button class="mcard" onclick="window._openBriefing(6)"><div class="num">MISSÃO 06</div><div class="nm">Falha Surpresa de Motor</div><div class="ds">Cruzeiro a 600 ft: baixe o coletivo em ≤ 2 s quando o motor apagar.</div><span class="badge">Reação · SFAR 73</span></button>
-      <button class="mcard" onclick="window._openBriefing(7)"><div class="num">MISSÃO 07</div><div class="nm">Traslado — Festa na Fazenda</div><div class="ds">Embarque o passageiro no H elevado (+82 kg) e pouse na clareira.</div><span class="badge">Navegação · Peso e potência</span></button>
-      <button class="mcard" onclick="window._openBriefing(8)"><div class="num">MISSÃO 08</div><div class="nm">Rota Urbana e Montanha</div><div class="ds">Cruze os prédios, desembarque no H urbano e suba ao platô a 1.650 ft.</div><span class="badge">Navegação · Densidade-altitude</span></button>
-      <button class="mcard" onclick="window._openBriefing(9)"><div class="num">MISSÃO 09</div><div class="nm">Resgate Aeromédico — Rodovia</div><div class="ds">Pouse entre os fios de alta tensão na rodovia e leve o paciente ao hospital.</div><span class="badge">HEMS · Área confinada</span></button>
-      <button class="mcard" onclick="window._openBriefing(10)"><div class="num">MISSÃO 10</div><div class="nm">Resgate Marítimo — Guincho e Navio</div><div class="ds">Pairado de guincho sobre as ondas e pouso no navio em movimento a 25 kt.</div><span class="badge">SAR · Guincho e convés móvel</span></button>
-      <button class="mcard" onclick="window._openBriefing(11)"><div class="num">MISSÃO 11</div><div class="nm">Voo Livre — Mundo Aberto</div><div class="ds">Sem objetivo: decole e explore a cidade sem fim, em qualquer direção.</div><span class="badge">Exploração · 6-DoF</span></button>
+      <button class="mcard" onclick="window._openBriefing(7)"><div class="num">MISSÃO 07 · MUNDO ABERTO</div><div class="nm">Táxi Executivo — Torre Central</div><div class="ds">Pouse no topo do prédio mais alto do centro e leve o passageiro à marina.</div><span class="badge">Rota livre · Pouso em teto</span></button>
+      <button class="mcard" onclick="window._openBriefing(8)"><div class="num">MISSÃO 08 · MUNDO ABERTO</div><div class="nm">Resgate Aeromédico</div><div class="ds">Acidente na estrada rural: pouse ao lado, embarque o paciente e leve ao hospital.</div><span class="badge">Rota livre · Aeromédico</span></button>
+      <button class="mcard" onclick="window._openBriefing(9)"><div class="num">MISSÃO 09 · MUNDO ABERTO</div><div class="nm">Pico da Serra</div><div class="ds">Suba a serra a oeste, pouse no cume a 1.400 ft e volte à base.</div><span class="badge">Rota livre · Altitude</span></button>
+      <button class="mcard" onclick="window._openBriefing(10)"><div class="num">MISSÃO 10 · MUNDO ABERTO</div><div class="nm">Resgate no Mar</div><div class="ds">Ache o náufrago, paire para o guincho e pouse no navio-patrulha em movimento.</div><span class="badge">Rota livre · Guincho e convés</span></button>
+      <button class="mcard" onclick="window._openBriefing(11)"><div class="num">MISSÃO 11 · MUNDO ABERTO</div><div class="nm">Circuito da Baía</div><div class="ds">14 anéis: zona rural, praia, plataforma de petróleo e volta sobre a cidade. Contra o relógio.</div><span class="badge">Rota em curvas · Cronometrado</span></button>
+      <button class="mcard" onclick="window._openBriefing(12)"><div class="num">MISSÃO 12 · MUNDO ABERTO</div><div class="nm">Voo Livre</div><div class="ds">Sem objetivo: explore cidade, serra, litoral e mar. Dá para pousar em qualquer teto.</div><span class="badge">Exploração · 6-DoF</span></button>
     </div>
     <div class="sub" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;">
       <label style="display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-family:var(--font-mono);font-size:10px;color:#ffb300;border:1px solid #4a3413;background:#241d13;border-radius:8px;padding:7px 10px;">
@@ -313,7 +314,7 @@ body.startMode #colPad,body.startMode #cycPad,body.startMode #pedPad{display:non
     <p class="sub" id="sensorModalMsg" style="color:var(--ink);font-size:13px;line-height:1.5;"></p>
     <div class="poh" id="sensorModalFix" style="font-size:12px;color:var(--ink);background:rgba(53,209,122,.10);border-left-color:var(--green);margin:12px 0;"></div>
     <div style="background:#0d1117;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:var(--font-mono);font-size:11px;color:var(--cyan);word-break:break-all;user-select:all;-webkit-user-select:all;" id="fileUrlBox">
-      file:///sdcard/Download/R22_Checkride_Trainer_3D-v17.html
+      file:///sdcard/Download/R22_Checkride_Trainer_3D-v18.html
     </div>
     <div class="btnrow" style="margin-top:14px;">
       <button class="act go" id="btnCopyFileUrl" style="flex:1;">📋 COPIAR ENDEREÇO file:///</button>
@@ -607,6 +608,103 @@ function waveY(x,z=0){
        + 0.14*Math.sin(0.165*x - 2.10*tSim - 0.09*z)
        + 0.08*Math.cos(0.12*z + 1.6*tSim + 0.04*x);
 }
+/* =========================================================================
+   MUNDO ABERTO — "receita" única do mapa, usada pela física (colisão, pouso) e pelo desenho 3D.
+   Aeródromo no centro · cidade em volta · serra a oeste · litoral e mar a leste.
+   ========================================================================= */
+const PITCH=90;                 // lado da quadra (m)
+const OW_SHORE=3200;            // a leste desta linha é mar
+const MTN={x:-3400,z:-2000,r:1150,h:430,top:75};   // serra: centro, raio, altura e raio do platô do cume
+const SITES={
+  base:  {x:0,   z:0,    h:0,   r:7,  label:"BASE"},
+  torre: {x:820, z:560,  h:170, w:36, wz:36, r:9,  label:"TORRE CENTRAL"},
+  hosp:  {x:-1500,z:1700,h:40,  w:46, wz:34, r:10, label:"HOSPITAL", hosp:true},
+  marina:{x:3150,z:420,  h:16,  w:30, wz:30, r:8,  label:"MARINA"},
+  plat:  {x:4500,z:-700, h:30,  w:34, wz:34, r:7,  label:"PLATAFORMA", padDx:7, padDz:7},
+  pico:  {x:MTN.x,z:MTN.z,h:MTN.h, r:11, label:"PICO DA SERRA"}
+};
+const OW_SOLIDS=["torre","hosp","marina","plat"].map(k=>({x:SITES[k].x,z:SITES[k].z,w:SITES[k].w,wz:SITES[k].wz,h:SITES[k].h,site:k}));
+const OW_HOLES=[{x:SITES.torre.x,z:SITES.torre.z,r:62},{x:SITES.hosp.x,z:SITES.hosp.z,r:72}];
+const hashN=(a,b)=>{const v=Math.sin(a*127.1+b*311.7)*43758.5453; return v-Math.floor(v);};
+// Deformação da malha de ruas (as mesmas ondas estão no shader do solo) e mapa de urbanização
+const WFX=z=>55*Math.sin(z*0.0040)+14*Math.sin(z*0.0110+1.3);
+const WFZ=x=>50*Math.sin(x*0.0043+0.7)+12*Math.sin(x*0.0125);
+const WFZd=x=>50*0.0043*Math.cos(x*0.0043+0.7)+12*0.0125*Math.cos(x*0.0125);
+const urbanAt=(x,z)=>0.55+0.30*Math.sin(x*0.00125+0.6)*Math.cos(z*0.00105-0.4)+0.22*Math.sin((x+z)*0.00071+2.0);
+const _gp={x:0,z:0};
+function gridToWorld(u,v){ let x=u,z=v; for(let k=0;k<4;k++){ x=u-WFX(z); z=v-WFZ(x); } _gp.x=x; _gp.z=z; return _gp; }
+function mtnH(x,z){
+  const dx=x-MTN.x, dz=z-MTN.z, d=Math.hypot(dx,dz);
+  if(d>=MTN.r) return 0;
+  if(d<=MTN.top) return MTN.h;
+  const t=(d-MTN.top)/(MTN.r-MTN.top), sm=1-t*t*(3-2*t), a=Math.atan2(dz,dx), k=Math.sin(t*Math.PI);
+  return MTN.h*Math.pow(sm,1.25)*(1+0.16*Math.sin(a*5+1.3)*k+0.07*Math.sin(a*11+d*0.01)*k);
+}
+function cityExcluded(w,x,z){
+  if(Math.abs(z)<150 && x>-520 && x<2420) return true;              // faixa do aeródromo e dos treinos
+  if(w.sea && x>w.sea.shore-80) return true;                         // orla e mar
+  if(w.mtn){ const dx=x-w.mtn.x, dz=z-w.mtn.z, rr=w.mtn.r+50; if(dx*dx+dz*dz<rr*rr) return true; }
+  if(w.cityHoles) for(const hl of w.cityHoles){ const dx=x-hl.x, dz=z-hl.z; if(dx*dx+dz*dz<hl.r*hl.r) return true; }
+  return false;
+}
+// Uma quadra da cidade: sempre a mesma para o mesmo endereço (bi,bj). kind: 0 nada · 1 rural · 2 parque · 3 construída
+function cityBlock(w,bi,bj){
+  const cache=w._cc||(w._cc=new Map());
+  const key=bi*65537+bj;
+  let B=cache.get(key);
+  if(B) return B;
+  if(cache.size>6000) cache.clear();
+  const u0=(bi+0.5)*PITCH, v0=(bj+0.5)*PITCH, g0=gridToWorld(u0,v0), bx=g0.x, bz=g0.z;
+  B={bi,bj,u0,v0,bx,bz,kind:0,lots:[],rot:0,cs:1,sn:0,urb:0};
+  if(!cityExcluded(w,bx,bz)){
+    const urb=urbanAt(bx,bz); B.urb=urb;
+    if(urb<0.47) B.kind=1;
+    else {
+      B.rot=Math.atan(WFZd(bx)); B.cs=Math.cos(B.rot); B.sn=Math.sin(B.rot);
+      if(hashN(bi*3.1+0.7,bj*7.3+11)>0.91) B.kind=2;
+      else {
+        B.kind=3;
+        const core=clamp((urb-0.62)/0.38,0,1);
+        for(let sx=0;sx<2;sx++) for(let sz=0;sz<2;sz++){
+          const r1=hashN(bi*4.3+sx*13.3,bj*2.7+sz*7.7), r2=hashN(bi*0.7+sx*5.1+9,bj*1.3+sz*3.9), r3=hashN(bi*1.9+sx*1.7+4,bj*3.3-sz*2.3);
+          if(r1<0.07) continue;
+          const gl=gridToWorld(u0+(sx-0.5)*35+(r2-0.5)*3, v0+(sz-0.5)*35+(r3-0.5)*3), lx=gl.x, lz=gl.z;
+          if(cityExcluded(w,lx,lz)) continue;
+          const fw=16+r2*10, fd=16+r3*10, tall=r1<0.14+core*0.80;
+          const h=tall?24+r2*r3*190*core+r3*26+core*18:6.5+r3*13;
+          B.lots.push({x:lx,z:lz,fw,fd,h,h2:(h>55&&r2>0.35)?h+8+r3*16:0,r1,r2,r3});
+        }
+      }
+    }
+  }
+  cache.set(key,B);
+  return B;
+}
+// Altura do topo do prédio da cidade sob o ponto (0 se for rua, parque, campo...). É o que dá colisão e pouso nos tetos.
+function cityTopAt(w,x,z){
+  if(!w||!w.open) return 0;
+  const B=cityBlock(w,Math.floor((x+WFX(z))/PITCH),Math.floor((z+WFZ(x))/PITCH));
+  if(B.kind!==3) return 0;
+  let top=0;
+  for(const L of B.lots){
+    const dx=x-L.x, dz=z-L.z, lx=dx*B.cs-dz*B.sn, lz=dx*B.sn+dz*B.cs;
+    if(Math.abs(lx)<=L.fw/2 && Math.abs(lz)<=L.fd/2){
+      const t=(L.h2 && Math.abs(lx)<=L.fw*0.3 && Math.abs(lz)<=L.fd*0.3)?L.h2:L.h;
+      if(t>top) top=t;
+    }
+  }
+  return top;
+}
+// Todo mundo de missão ganha o mesmo mapa por baixo: mar a leste, serra a oeste, marcos da cidade.
+function applyOpenWorld(w){
+  w.open=true;
+  if(!w.sea) w.sea={shore:OW_SHORE};
+  if(!w.terrain){ w.terrain=mtnH; w.mtn=MTN; }
+  w.solids=(w.solids||[]).concat(OW_SOLIDS);
+  w.cityHoles=OW_HOLES;
+  return w;
+}
+
 function terrainH(x,z=0){
   const w=mission&&mission.world;
   if(!w) return 0;
@@ -617,7 +715,8 @@ function terrainH(x,z=0){
     if(Math.abs(x-b.x)<=b.w/2 && Math.abs(z-bz)<=bwz/2) t=Math.max(t,b.h);
   }
   if(w.terrain) t=Math.max(t,w.terrain(x,z));
-  if(w.boat && Math.abs(x-boatX())<=w.boat.len/2 && Math.abs(z)<=6.5) t=Math.max(t,boatDeck());
+  if(w.open){ const ct=cityTopAt(w,x,z); if(ct>t) t=ct; }
+  if(w.boat && Math.abs(x-boatX())<=w.boat.len/2 && Math.abs(z-(w.boat.z||0))<=6.5) t=Math.max(t,boatDeck());
   return t;
 }
 function newHeli(o){
@@ -734,6 +833,104 @@ function autoScore(w){
        met.flareAlt<0?0:band(met.flareAlt,40,15,32),3),
     mAutoBand(), mTouch(true)
   ];
+}
+
+/* =========================================================================
+   OPERAÇÕES EM MUNDO ABERTO — cada missão é uma lista de "pernas":
+   land  = pousar num lugar (teto, cume, navio, área marcada)
+   hover = pairar sobre um ponto por alguns segundos (guincho)
+   gate  = atravessar um anel no ar
+   O piloto escolhe o caminho; o jogo só aponta o próximo alvo.
+   ========================================================================= */
+const ACC=(()=>{ const a={x:2300,z:1300,rot:0.5}; a.zx=a.x+26*Math.sin(a.rot); a.zz=a.z+26*Math.cos(a.rot); return a; })();
+const SEA_VICTIM={x:3900,z:900};
+const SEA_SHIP={x0:4050,z:1500,v:9*KT,len:36,deck:3.1,amp:0.55,om:0.9,sup0:5,sup1:16,supH:7};
+const RING_COURSE=[[400,45,0],[1100,80,0],[2000,90,250],[2700,70,900],[3150,35,1200],[3600,25,700],[4000,30,0],
+                   [4420,52,-560],[3900,40,-1100],[3250,30,-900],[2600,120,-500],[1800,165,-330],[900,110,0],[250,50,0]];
+function legLand(key,extra){
+  const S=SITES[key];
+  return Object.assign({type:"land",x:S.x+(S.padDx||0),z:S.z+(S.padDz||0),h:S.h,r:S.r,label:S.label},extra||{});
+}
+function forceFreeMode(){
+  // No mundo aberto o piloto precisa girar o nariz: pedais manuais (6-DoF). A escolha anterior volta ao sair.
+  if(freePrevAuto===null) freePrevAuto=autoCoord;
+  autoCoord=false;
+  const cf=document.getElementById("chkFree6DoF"); if(cf) cf.checked=true;
+}
+function opsMission(def){
+  return {
+    phased:true, open:true, id:def.id, num:def.num, name:def.name, desc:def.desc, badge:def.badge, targets:def.targets, poh:def.poh,
+    setup(){
+      heli=newHeli({x:0}); collective=0.30;
+      env=newEnv({windBase:(3+Math.random()*5)*KT*(Math.random()<.5?-1:1),gustSigma:1.2*KT});
+      forceFreeMode();
+      return Object.assign({padX:0,trees:[],zone:null,slope:0,ops:def,legs:def.legs()}, def.world?def.world():{});
+    },
+    live(dt,st,w){ opsLive(dt,st,w); },
+    score(w){ return opsScore(w); },
+    guideInfo(st,w){ return opsGuide(w); },
+    chart:"hover"
+  };
+}
+function opsAdvance(w,L){
+  if(L.mass) heli.massK+=L.mass;
+  if(L.type==="hover"){ met.victimUp=true; met.hoistOn=false; }
+  met.td=null; met.hold=0;
+  met.leg=(met.leg||0)+1;
+  if(met.leg>=w.legs.length){ finish(true,w.ops.doneMsg||"Missão concluída!"); return; }
+  if(L.msg) ev(L.msg);
+}
+function opsLive(dt,st,w){
+  met.t+=dt;
+  const L=w.legs[met.leg||0];
+  if(!L) return;
+  if(L.type==="land"){
+    if(!heli.onGround||!met.td) return;
+    const baseV=(heli.onBoat&&w.boat)?w.boat.v:0;
+    if(Math.hypot(heli.vx-baseV,heli.vz)>0.4) return;       // espera parar de deslizar
+    const td=met.td;
+    const here=L.boat ? !!td.onBoat : (Math.hypot(heli.x-L.x,heli.z-L.z)<=L.r && Math.abs((heli.y-CG_GROUND)-L.h)<1.5);
+    if(!here){ met.td=null; ev("Pouso fora do alvo — o destino é: "+L.label); return; }
+    met.worstVsi=Math.max(met.worstVsi||0,td.vsi); met.worstGs=Math.max(met.worstGs||0,td.gs);
+    if(td.vsi>350||td.gs>8){ finish(false,"Toque fora de parâmetros em "+L.label+" ("+fmt(td.vsi)+" fpm / "+fmt(td.gs)+" kt)."); return; }
+    opsAdvance(w,L);
+  } else if(L.type==="hover"){
+    const surf=(w.sea&&heli.x>w.sea.shore)?waveY(heli.x,heli.z):terrainH(heli.x,heli.z);
+    const agl=heli.y+SKID_Y-surf;
+    const ok=!heli.onGround && Math.hypot(heli.x-L.x,heli.z-L.z)<=L.r && agl>=L.lo && agl<=L.hi && st.gsKt<=6;
+    if(ok){ if(!(met.hold>0)) ev("Em posição — segure o pairado, guincho descendo"); met.hold=(met.hold||0)+dt; }
+    else met.hold=Math.max(0,(met.hold||0)-dt*0.6);
+    met.hoistOn=met.hold>0.05;
+    if(met.hold>=L.hold) opsAdvance(w,L);
+  } else if(L.type==="gate"){
+    if(Math.hypot(heli.x-L.x,heli.y-L.y,heli.z-L.z)<=L.r) opsAdvance(w,L);
+  }
+}
+function opsGuide(w){
+  if(!met||!heli||heli.done||!w.legs) return null;
+  const L=w.legs[met.leg||0];
+  if(!L) return null;
+  let tx=L.x, tz=L.z, ty=L.h||0;
+  if(L.boat&&w.boat){ tx=boatX(); tz=w.boat.z||0; ty=boatDeck(); }
+  if(L.type==="gate") ty=L.y;
+  if(L.type==="hover") ty=0;
+  const dist=Math.hypot(tx-heli.x,tz-heli.z);
+  let altT;
+  if(L.type==="gate") altT=L.y/FT;
+  else if(L.type==="hover") altT=((L.lo+L.hi)/2-SKID_Y)/FT;
+  else altT=(ty+(dist>350?75:18))/FT;
+  return {label:L.label,dist,altT,tx,tz,ty,r:L.r||8,kind:L.type,hold:L.type==="hover"?(met.hold||0)/L.hold:0,gate:L.type==="gate"?(met.leg||0):-1};
+}
+function opsScore(w){
+  const N=w.legs.length, done=Math.min(met.leg||0,N), par=w.ops.par;
+  const rows=[ m_("Etapas concluídas",N+" de "+N,done+" de "+N,100*done/N,3) ];
+  if(met.worstVsi!==undefined){
+    rows.push(m_("Toque mais duro","≤ 300 fpm",fmt(met.worstVsi)+" fpm",band(met.worstVsi,0,300,480),2));
+    rows.push(m_("Velocidade no toque","≤ 5 kt",fmt(met.worstGs,1)+" kt",band(met.worstGs,0,5,12),1));
+  }
+  rows.push(mRpm());
+  rows.push(m_("Tempo total","≤ "+par+" s",fmt(met.t)+" s",met.t<=par?100:band(met.t-par,0,0,par),1));
+  return rows;
 }
 
 const MISSIONS=[
@@ -916,341 +1113,64 @@ const MISSIONS=[
   },
   chart:"auto"
 },
+opsMission({
+  id:"vip", num:"07", name:"Táxi Executivo — Torre Central", par:420,
+  desc:"Um executivo espera no heliponto do prédio mais alto do centro. Decole da base, suba acima dos prédios (bater na lateral de qualquer um derruba), pouse no topo da TORRE CENTRAL (170 m) e leve o passageiro até a MARINA, na orla a leste. A rota é sua: siga a seta do alvo e o facho de luz azul.",
+  badge:"Mundo aberto · Pouso em teto",
+  targets:[["1ª perna","Base → topo da Torre Central"],["Embarque","+82 kg (menos margem de potência)"],["2ª perna","Torre → Marina, na orla"],["Toque","≤ 350 fpm · ≤ 8 kt"],["Tempo de referência","7 min"]],
+  poh:"POH Seç. 5: com mais peso a margem de potência cai — suba e desacelere com antecedência. Aproximação a teto: rampa íngreme e constante, sem pairar alto sobre a borda.",
+  doneMsg:"Passageiro entregue na marina — táxi executivo concluído!",
+  legs(){ return [ legLand("torre",{msg:"Executivo a bordo (+82 kg). Destino: MARINA, na orla a leste.",mass:0.15}), legLand("marina") ]; }
+}),
+opsMission({
+  id:"medevac", num:"08", name:"Resgate Aeromédico", par:480,
+  desc:"Acidente numa estrada rural a sudeste da base. Pouse na área marcada ao lado dos veículos (círculo verde), embarque o paciente e leve ao heliponto do HOSPITAL, do outro lado da cidade. Você escolhe o caminho: por cima do centro é mais curto, contornando é mais seguro.",
+  badge:"Mundo aberto · Aeromédico",
+  targets:[["1ª perna","Base → acidente na estrada"],["Pouso","dentro do círculo verde"],["Embarque","paciente +80 kg"],["2ª perna","Acidente → teto do Hospital"],["Tempo de referência","8 min"]],
+  poh:"Guia de manobras: em área não preparada, faça um reconhecimento alto antes de pousar — fumaça mostra o vento. Aproximação ao hospital sempre contra o vento.",
+  doneMsg:"Paciente entregue à equipe médica — resgate concluído!",
+  world(){ return {acc:ACC}; },
+  legs(){ return [ {type:"land",x:ACC.zx,z:ACC.zz,h:0,r:16,label:"ACIDENTE NA ESTRADA",msg:"Paciente embarcado (+80 kg). Leve ao HOSPITAL.",mass:0.147}, legLand("hosp") ]; }
+}),
+opsMission({
+  id:"pico", num:"09", name:"Pico da Serra", par:600,
+  desc:"A serra fica a oeste, depois da zona rural. Suba até o cume a 1.400 ft e pouse no heliponto do platô. Lá em cima o ar é mais rarefeito: menos potência sobrando e resposta mais lenta. Depois, volte e pouse na base.",
+  badge:"Mundo aberto · Altitude",
+  targets:[["1ª perna","Base → cume (1.400 ft)"],["Pouso","heliponto do platô"],["2ª perna","Cume → Base"],["RPM rotor","101–104% (verde)"],["Tempo de referência","10 min"]],
+  poh:"POH Seç. 5: a potência disponível cai com a altitude-densidade. Chegue ao cume com velocidade e razão de descida baixas e cuidado com o vento descendente no lado protegido da montanha.",
+  doneMsg:"De volta à base — travessia da serra concluída!",
+  legs(){ return [ legLand("pico",{msg:"Cume alcançado! Agora volte e pouse na BASE."}), legLand("base") ]; }
+}),
+opsMission({
+  id:"sar", num:"10", name:"Resgate no Mar", par:480,
+  desc:"Há um náufrago mar adentro, a leste da orla. Encontre a boia laranja, paire sobre ela entre 10 e 45 ft por 12 segundos para o guincho içar a vítima — e depois pouse no convés do NAVIO-PATRULHA, que está navegando ali perto.",
+  badge:"Mundo aberto · Guincho e convés móvel",
+  targets:[["1ª perna","Base → vítima no mar"],["Guincho","pairado 10–45 ft por 12 s"],["Embarque","vítima +80 kg"],["2ª perna","pouso no navio em movimento"],["Tempo de referência","8 min"]],
+  poh:"Guia de manobras: sobre a água faltam referências de altura — use o RAD ALT. Para pousar em convés móvel, iguale a velocidade do navio e desça na crista do balanço.",
+  doneMsg:"Pousado no convés — vítima em segurança. Resgate no mar concluído!",
+  world(){ return {victim:{x:SEA_VICTIM.x,z:SEA_VICTIM.z}, boat:Object.assign({},SEA_SHIP)}; },
+  legs(){ return [ {type:"hover",x:SEA_VICTIM.x,z:SEA_VICTIM.z,r:7,lo:3,hi:14,hold:12,label:"VÍTIMA NO MAR",msg:"Vítima içada (+80 kg)! Pouse no NAVIO-PATRULHA.",mass:0.147}, {type:"land",boat:true,label:"NAVIO-PATRULHA"} ]; }
+}),
+opsMission({
+  id:"rings", num:"11", name:"Circuito da Baía", par:420,
+  desc:"Um circuito de 14 anéis que sai da base, cruza a zona rural, desce até a praia, contorna a plataforma de petróleo no mar e volta por cima da cidade. Atravesse os anéis na ordem (o próximo fica amarelo) e termine pousando na base. Vale o tempo.",
+  badge:"Mundo aberto · Circuito cronometrado",
+  targets:[["Anéis","14, na ordem"],["Altura","varia de 80 a 540 ft"],["Final","pouso na base"],["Vne","102 KIAS"],["Tempo de referência","7 min"]],
+  poh:"POH Seç. 2: Vne 102 KIAS. Em curva, coordene com os pedais e não deixe o nariz cair; curvas fechadas a baixa altura pedem velocidade moderada.",
+  doneMsg:"Circuito da Baía completo!",
+  world(){ return {gates:RING_COURSE}; },
+  legs(){ const n=RING_COURSE.length; return RING_COURSE.map((g,k)=>({type:"gate",x:g[0],y:g[1],z:g[2],r:16,label:"ANEL "+(k+1)+"/"+n})).concat([legLand("base")]); }
+}),
 {
-  phased:true, id:"taxi", num:"07", name:"Traslado — Festa na Fazenda",
-  desc:"Decole da base e pouse no heliponto elevado do edifício para embarcar o passageiro (3 s parado no H). Depois leve-o à clareira entre as árvores, ao lado da casa onde a festa já começou.",
-  badge:"Navegação · Peso e potência",
-  targets:[["Toque no H elevado","VSI ≤ 240 fpm · GS ≤ 4 kt"],["Embarque","3 s parado no topo"],["Livrar árvores","≥ 15 ft de topo"],["Toque final","na clareira · VSI ≤ 300 fpm · GS ≤ 6 kt"],["RPM rotor","101–104% (verde)"]],
-  poh:"POH Seç. 2/4: peso extra aumenta a potência induzida. Em área confinada e pesado, mantenha VSI < 300 fpm abaixo de 30 kt para não entrar em settling with power.",
-  guideInfo(st,w){
-    if(!met||heli.done) return null;
-    if(met.phase===2) return null;
-    if(met.phase>=3) return mkGuide("CLAREIRA DA FESTA",(w.zone.start+w.zone.stop)/2,0,55);
-    return mkGuide("HELIPONTO ELEVADO",w.plat.x,w.plat.h,55);
-  },
-  setup(){
-    heli=newHeli({x:0}); collective=0.30;
-    env=newEnv({windBase:(3+Math.random()*5)*KT*(Math.random()<.5?-1:1),gustSigma:1.0*KT});
-    const trees=[
-      {x:952,z:0,h:14,cr:5},{x:970,z:2,h:16,cr:5.5},{x:988,z:-2,h:13,cr:4.5},
-      {x:1098,z:0,h:15,cr:5},{x:1120,z:1,h:13,cr:4.5}
-    ];
-    return {padX:0,trees,zone:{start:1012,stop:1086},slope:0,
-            plat:{x:430,w:15,h:16}, party:{x:1150,w:26}};
-  },
-  live(dt,st,w){
-    met.t+=dt;
-    if(met.phase===undefined){met.phase=0;met.board=0;met.td1=null;}
-    for(const tr of w.trees){
-      if(Math.abs(heli.x-tr.x)<8 && !heli.onGround){
-        met.treeClr=Math.min(met.treeClr,(heli.y+SKID_Y-(tr.h+tr.cr))/FT);
-      }
-    }
-    if(met.phase===0){
-      if(!heli.onGround && st.aglFt>3){met.phase=1; ev("Decolagem da base — rumo ao heliponto elevado");}
-    } else if(met.phase===1){
-      if(met.td){
-        if(met.td.onPlat){met.phase=2; met.board=0; met.td1=met.td; ev("No heliponto elevado — embarcando passageiro…");}
-        else {met.td=null; ev("Toque fora do H elevado — decole e pouse no topo do edifício");}
-      }
-    } else if(met.phase===2){
-      if(heli.onGround && heli.ter>0){
-        met.board+=dt;
-        if(met.board>=3){
-          heli.massK=1.15; met.phase=3; met.td=null;
-          ev("Passageiro a bordo (+82 kg) — decole e siga para a festa →");
-        }
-      } else if(!heli.onGround && st.aglFt>8 && met.board>0.3 && met.board<3){
-        finish(false,"Decolou durante o embarque do passageiro.");
-      }
-    } else if(met.phase===3){
-      if(met.td){
-        const td=met.td;
-        if(td.onPlat || terrainH(td.x,td.z)>0){ met.td=null; }
-        else if(td.x < w.zone.start-30){ met.td=null; ev("Ainda não é aqui — a clareira da festa fica adiante →"); }
-        else {
-          const ok=td.inZone && td.vsi<=300 && td.gs<=6 && Math.abs(td.pitchDeg)<=6;
-          met.phase=4;
-          finish(ok, ok?"Passageiro entregue na festa — traslado concluído!":
-            (!td.inZone?"Toque final fora da clareira da festa.":"Toque final fora de parâmetros ("+fmt(td.vsi)+" fpm / "+fmt(td.gs)+" kt)."));
-        }
-      }
-    }
-  },
-  score(w){
-    const t1=met.td1||{}, t2=(met.phase>=4?met.td:null)||{};
-    const s1=t1.vsi===undefined?0:(t1.vsi<=240?100:band(t1.vsi-240,0,0,220))*0.6+(t1.gs<=4?100:band(t1.gs-4,0,0,8))*0.4;
-    const s2=t2.vsi===undefined?0:(t2.inZone?100:25)*0.4+(t2.vsi<=300?100:band(t2.vsi-300,0,0,220))*0.35+(t2.gs<=6?100:band(t2.gs-6,0,0,10))*0.25;
-    return [
-      m_("Toque no heliponto elevado","≤ 240 fpm · ≤ 4 kt",t1.vsi===undefined?"—":fmt(t1.vsi)+" fpm · "+fmt(t1.gs,1)+" kt",s1,3),
-      m_("Embarque do passageiro","3 s parado",heli.massK>1?"completo":"não realizado",heli.massK>1?100:0,1),
-      m_("Livramento das árvores","≥ 15 ft",met.treeClr>900?"—":fmt(met.treeClr)+" ft",met.treeClr>900?100:(met.treeClr>=15?100:band(15-met.treeClr,0,0,15)),2),
-      m_("Toque final na clareira","na zona · ≤ 300 fpm · ≤ 6 kt",t2.vsi===undefined?"—":((t2.inZone?"na zona":"fora")+" · "+fmt(t2.vsi)+" fpm · "+fmt(t2.gs,1)+" kt"),s2,3),
-      mRpm()
-    ];
-  },
-  chart:"hover"
-},
-{
-  phased:true, id:"city", num:"08", name:"Rota Urbana e Montanha",
-  desc:"Dia quente (ISA+20). Decole do aeroporto com o passageiro, cruze os prédios e pouse no heliponto urbano (3 s). Depois suba, atravesse as nuvens (turbulência!) e pouse no platô da montanha a ~1.650 ft.",
-  badge:"Navegação · Densidade-altitude",
-  targets:[["Livrar prédios","≥ 15 ft dos topos"],["Toque heliponto urbano","VSI ≤ 240 fpm · GS ≤ 4 kt"],["Desembarque","3 s parado no H"],["Toque no platô","VSI ≤ 240 fpm · GS ≤ 5 kt"],["RPM rotor","101–104% (verde)"]],
-  poh:"POH Seç. 5: em dia quente e/ou altitude, a densidade cai — o rotor precisa de mais passo e o motor aspirado entrega menos potência.",
-  setup(){
-    heli=newHeli({x:0,massK:1.15}); collective=0.30;
-    env=newEnv({windBase:(3+Math.random()*4)*KT*-1,gustSigma:1.1*KT});
-    const solids=[
-      {x:340,z:0,w:26,h:45},{x:420,z:0,w:24,h:61},{x:500,z:0,w:28,h:38},
-      {x:575,z:0,w:24,h:66},{x:650,z:0,w:26,h:50},{x:722,z:0,w:24,h:72},
-      {x:860,z:0,w:26,h:58},{x:932,z:0,w:24,h:40}
-    ];
-    const mtn=(x)=>{
-      if(x<1520||x>2400) return 0;
-      const pk=500;
-      if(x<1945){ const t=(x-1520)/425; return pk*t*t*(3-2*t); }
-      if(x<=1980) return pk;
-      const t=Math.min(1,(x-1980)/300); return pk*(1-t*t*(3-2*t));
-    };
-    return {padX:0,trees:[],zone:{start:1948,stop:1977},slope:0,
-            plat:{x:780,w:16,h:42}, solids, terrain:mtn,
-            clouds:{x0:1120,x1:1580,y0:185,y1:335},
-            runway:true, hotK:0.93, mtnPad:{x:1962,h:500}};
-  },
-  guideInfo(st,w){
-    if(!met||heli.done) return null;
-    if(met.phase===2) return null;
-    if(met.phase>=3) return mkGuide("PLATÔ DA MONTANHA",w.mtnPad.x,w.mtnPad.h,65);
-    return mkGuide("HELIPONTO URBANO",w.plat.x,w.plat.h,52);
-  },
-  live(dt,st,w){
-    met.t+=dt;
-    if(met.phase===undefined){met.phase=0;met.board=0;met.td1=null;met.bldClr=9999;}
-    for(const b of w.solids){
-      if(Math.abs(heli.x-b.x)<b.w/2+6 && Math.abs(heli.z-(b.z||0))<b.w/2+6 && !heli.onGround){
-        met.bldClr=Math.min(met.bldClr,(heli.y+SKID_Y-b.h)/FT);
-      }
-    }
-    const c=w.clouds;
-    if(heli.x>c.x0&&heli.x<c.x1&&heli.y>c.y0&&heli.y<c.y1&&!heli.onGround){
-      met.inCloud=true;
-      heli.q+=(Math.random()-0.5)*9.5*dt+Math.sin(tSim*5.3)*0.9*dt;
-      heli.vy+=(Math.random()-0.5)*7.0*dt+Math.sin(tSim*3.1)*1.6*dt;
-      shake=Math.max(shake,1.8);
-    }
-    if(met.phase===0){
-      if(!heli.onGround && st.aglFt>3){met.phase=1; ev("Decolagem — atravesse a cidade até o heliponto urbano");}
-    } else if(met.phase===1){
-      if(met.td){
-        if(met.td.onPlat){met.phase=2; met.board=0; met.td1=met.td; ev("No heliponto urbano — desembarcando passageiro…");}
-        else {met.td=null; ev("Toque fora do heliponto — o H fica no prédio marcado");}
-      }
-    } else if(met.phase===2){
-      if(heli.onGround && heli.ter>0){
-        met.board+=dt;
-        if(met.board>=3){
-          heli.massK=1.0; met.phase=3; met.td=null;
-          ev("Passageiro desembarcado — agora rume à montanha, através das nuvens →");
-        }
-      } else if(!heli.onGround && st.aglFt>8 && met.board>0.3 && met.board<3){
-        finish(false,"Decolou durante o desembarque do passageiro.");
-      }
-    } else if(met.phase===3){
-      if(met.td){
-        const td=met.td;
-        const onMtn=w.terrain(td.x)>=w.mtnPad.h-1 && td.x>=w.zone.start-2 && td.x<=w.zone.stop+2;
-        if(terrainH(td.x,td.z)>0 && !onMtn && td.x<1500){ met.td=null; }
-        else if(td.x<w.zone.start-40 && terrainH(td.x,td.z)===0){ met.td=null; ev("Siga adiante — o platô fica no topo da montanha →"); }
-        else if(!onMtn){ finish(false,"Toque fora do platô demarcado da montanha."); met.phase=4; }
-        else {
-          const ok=td.vsi<=300 && td.gs<=6 && Math.abs(td.pitchDeg)<=6;
-          met.phase=4;
-          finish(ok, ok?"Pouso na montanha concluído — rota urbana completa!":"Toque fora de parâmetros ("+fmt(td.vsi)+" fpm / "+fmt(td.gs)+" kt).");
-        }
-      }
-    }
-  },
-  score(w){
-    const t1=met.td1||{}, t2=(met.phase>=4?met.td:null)||{};
-    const s1=t1.vsi===undefined?0:(t1.vsi<=240?100:band(t1.vsi-240,0,0,220))*0.6+(t1.gs<=4?100:band(t1.gs-4,0,0,8))*0.4;
-    const s2=t2.vsi===undefined?0:(t2.vsi<=240?100:band(t2.vsi-240,0,0,220))*0.6+(t2.gs<=5?100:band(t2.gs-5,0,0,9))*0.4;
-    return [
-      m_("Livramento dos prédios","≥ 15 ft",met.bldClr>900?"—":fmt(met.bldClr)+" ft",met.bldClr>900?100:(met.bldClr>=15?100:band(15-met.bldClr,0,0,15)),2),
-      m_("Toque no heliponto urbano","≤ 240 fpm · ≤ 4 kt",t1.vsi===undefined?"—":fmt(t1.vsi)+" fpm · "+fmt(t1.gs,1)+" kt",s1,3),
-      m_("Desembarque","3 s parado",heli.massK===1&&met.phase>=3?"completo":"não realizado",heli.massK===1&&met.phase>=3?100:0,1),
-      m_("Toque no platô (~1.650 ft)","≤ 240 fpm · ≤ 5 kt",t2.vsi===undefined?"—":fmt(t2.vsi)+" fpm · "+fmt(t2.gs,1)+" kt",s2,3),
-      mRpm()
-    ];
-  },
-  chart:"hover"
-},
-{
-  phased:true, id:"hems", num:"09", name:"Resgate Aeromédico — Acidente na Rodovia",
-  desc:"Engavetamento na rodovia. Pouse na janela livre entre a fiação de alta tensão, postes e árvores, embarque o paciente (4 s) e leve-o ao heliponto elevado do hospital.",
-  badge:"HEMS · Área confinada",
-  targets:[["Livrar fios/obstáculos","≥ 15 ft"],["Toque na clareira","VSI ≤ 240 fpm · GS ≤ 4 kt"],["Embarque do paciente","4 s parado"],["Toque no hospital","VSI ≤ 240 fpm · GS ≤ 4 kt"],["Tempo de missão","≤ 150 s"]],
-  poh:"Doutrina HEMS: identificar fios pelos postes, aproximação íngreme na área confinada com potência checada antes de descer abaixo dos obstáculos.",
-  setup(){
-    heli=newHeli({x:0}); collective=0.30;
-    env=newEnv({windBase:(3+Math.random()*4)*KT,gustSigma:1.2*KT});
-    const poles=[470,555,640,825,910];
-    const wires=[];
-    for(const [a,b] of [[470,555],[555,640],[825,910]]) wires.push({x0:a,x1:b,y0:13,y1:13,sag:1.3});
-    return {padX:0,slope:0,
-      trees:[{x:380,z:0,h:12,cr:4.5},{x:792,z:0,h:11,cr:4},{x:952,z:0,h:13,cr:4.5}],
-      zone:{start:751,stop:771},
-      plat:{x:1360,w:16,h:35}, platDecor:"hospital",
-      poles, wires, road:{x0:430,x1:985},
-      wreck:{cars:[{x:646,c:"#b6413a",tip:0},{x:668,c:"#3a6fb6",tip:0.35},{x:686,c:"#c9c9c9",tip:0}],
-             truck:{x:706,tip:0.18}, amb:630, patient:724, medics:[731,735]}};
-  },
-  guideInfo(st,w){
-    if(!met||heli.done) return null;
-    if(met.phase===2) return null;
-    if(met.phase>=3) return mkGuide("HOSPITAL — H ELEVADO",w.plat.x,w.plat.h,50);
-    return mkGuide("LOCAL DO ACIDENTE",(w.zone.start+w.zone.stop)/2,0,52);
-  },
-  live(dt,st,w){
-    met.t+=dt;
-    if(met.phase===undefined){met.phase=0;met.board=0;met.td1=null;met.wireClr=9999;met.treeClr=9999;}
-    for(const wr of w.wires){
-      if(heli.x>wr.x0&&heli.x<wr.x1&&!heli.onGround){
-        const tt=(heli.x-wr.x0)/(wr.x1-wr.x0);
-        const wy=wr.y0-wr.sag*4*tt*(1-tt);
-        if(heli.y+SKID_Y>wy) met.wireClr=Math.min(met.wireClr,(heli.y+SKID_Y-wy)/FT);
-      }
-    }
-    for(const tr of w.trees){
-      if(Math.abs(heli.x-tr.x)<7&&!heli.onGround) met.treeClr=Math.min(met.treeClr,(heli.y+SKID_Y-(tr.h+tr.cr))/FT);
-    }
-    if(met.phase===0){
-      if(!heli.onGround&&st.aglFt>3){met.phase=1;ev("Decolagem — siga ao acidente; atenção à fiação!");}
-    } else if(met.phase===1){
-      if(met.td){
-        if(met.td.inZone&&heli.ter===0){met.phase=2;met.board=0;met.td1=met.td;ev("Na clareira — embarcando o paciente…");}
-        else if(met.td.onPlat){met.td=null;ev("Primeiro o paciente! O acidente fica na rodovia ←");}
-        else {met.td=null;ev("Toque fora da clareira — pouse entre a fiação e as árvores");}
-      }
-    } else if(met.phase===2){
-      if(heli.onGround){
-        met.board+=dt;
-        if(met.board>=4){
-          heli.massK=1.14; met.phase=3; met.td=null;
-          ev("Paciente a bordo — direto ao hospital! →");
-        }
-      } else if(st.aglFt>8&&met.board>0.3&&met.board<4){
-        finish(false,"Decolou durante o embarque do paciente.");
-      }
-    } else if(met.phase===3){
-      if(met.td){
-        const td=met.td;
-        if(td.inZone&&heli.ter===0){met.td=null;}
-        else if(!td.onPlat&&td.x<w.plat.x-60){met.td=null;ev("O heliponto do hospital fica adiante →");}
-        else if(!td.onPlat){finish(false,"Toque fora do heliponto do hospital.");met.phase=4;}
-        else{
-          const ok=td.vsi<=300&&td.gs<=6&&Math.abs(td.pitchDeg)<=6;
-          met.phase=4;
-          finish(ok, ok?"Paciente entregue à equipe médica — resgate concluído!":"Toque fora de parâmetros ("+fmt(td.vsi)+" fpm / "+fmt(td.gs)+" kt).");
-        }
-      }
-    }
-  },
-  score(w){
-    const t1=met.td1||{}, t2=(met.phase>=4?met.td:null)||{};
-    const obs=Math.min(met.wireClr,met.treeClr);
-    const s1=t1.vsi===undefined?0:(t1.vsi<=240?100:band(t1.vsi-240,0,0,200))*0.6+(t1.gs<=4?100:band(t1.gs-4,0,0,7))*0.4;
-    const s2=t2.vsi===undefined?0:(t2.vsi<=240?100:band(t2.vsi-240,0,0,200))*0.6+(t2.gs<=4?100:band(t2.gs-4,0,0,7))*0.4;
-    return [
-      m_("Livramento fios/árvores","≥ 15 ft",obs>900?"—":fmt(obs)+" ft",obs>900?100:(obs>=15?100:band(15-obs,0,0,15)),2),
-      m_("Toque na clareira","≤ 240 fpm · ≤ 4 kt",t1.vsi===undefined?"—":fmt(t1.vsi)+" fpm · "+fmt(t1.gs,1)+" kt",s1,3),
-      m_("Embarque do paciente","4 s parado",heli.massK>1&&met.phase>=3?"completo":"não realizado",heli.massK>1&&met.phase>=3?100:0,1),
-      m_("Toque no hospital","≤ 240 fpm · ≤ 4 kt",t2.vsi===undefined?"—":fmt(t2.vsi)+" fpm · "+fmt(t2.gs,1)+" kt",s2,3),
-      m_("Tempo de missão","≤ 150 s",fmt(met.t)+" s",met.t<=150?100:band(met.t-150,0,0,120),1),
-      mRpm()
-    ];
-  },
-  chart:"hover"
-},
-{
-  phased:true, id:"sea", num:"10", name:"Resgate Marítimo — Guincho e Navio",
-  desc:"Banhista mar adentro. Pairado de guincho a 20–40 ft sobre as ondas por 9 s sobre a vítima. Depois pouse no convés de popa do navio de apoio, que navega a 25 kt.",
-  badge:"SAR · Guincho e convés móvel",
-  targets:[["Pairado de guincho","20–40 ft · GS ≤ 5 kt · 9 s"],["Não tocar a água","ondas de ~3 ft"],["Livrar a superestrutura","proa do navio"],["Toque no convés","VSI rel ≤ 300 fpm · GS rel ≤ 6 kt"],["RPM rotor","101–104% (verde)"]],
-  poh:"Doutrina SAR: referência no horizonte durante o guincho; para o navio em movimento, aproxime por trás, iguale a velocidade (25 kt) e toque suave relativo ao convés.",
-  setup(){
-    heli=newHeli({x:0}); collective=0.30;
-    env=newEnv({windBase:(8+Math.random()*5)*KT,gustSigma:2.0*KT});
-    return {padX:0,slope:0,trees:[],zone:null,
-      sea:{shore:280}, victim:{x:700},
-      boat:{x0:1150,v:25*KT,len:36,deck:3.1,amp:0.55,om:0.9,sup0:5,sup1:16,supH:7}};
-  },
-  guideInfo(st,w){
-    if(!met||heli.done) return null;
-    if(met.phase===2) return null;
-    if(met.phase>=3){
-      const bx=boatX(), adx=Math.abs(bx-heli.x);
-      return {label:"NAVIO (25 kt)",x:bx,padAltM:boatDeck(),dist:bx-heli.x,
-        altT:boatDeck()/FT+clamp(adx*0.42,18,300),
-        vT:clamp(Math.round(25+adx*0.14),25,68)};
-    }
-    const adx=Math.abs(w.victim.x-heli.x);
-    return {label:"VÍTIMA NO MAR",x:w.victim.x,padAltM:0,dist:w.victim.x-heli.x,
-      altT:adx<60?30:30+clamp(adx*0.35,0,320),
-      vT:clamp(Math.round(adx*0.2),4,60)};
-  },
-  live(dt,st,w){
-    met.t+=dt;
-    if(met.phase===undefined){met.phase=0;met.hoist=0;met.lowSea=0;}
-    if(met.phase===0){
-      if(!heli.onGround&&st.aglFt>3){met.phase=1;ev("Decolagem — a vítima está mar adentro →");}
-    } else if(met.phase===1){
-      const dx=Math.hypot(heli.x-w.victim.x, heli.z);
-      const agl=st.aglFt, gs=st.gsKt, vy=Math.abs(heli.vy);
-      const okH=dx<6&&agl>=18&&agl<=42&&gs<=5&&vy<1.5;
-      if(okH){ met.hoist+=dt; }
-      else if(met.hoist>0){ met.hoist=Math.max(0,met.hoist-dt*0.35); }
-      if(dx<25&&agl<14&&!heli.onGround){ met.lowSea+=dt; }
-      if(met.hoist>=9){
-        heli.massK=1.16; met.phase=3; met.td=null;
-        ev("Bombeiro e vítima a bordo (+87 kg) — pouse no navio de apoio →");
-      }
-    } else if(met.phase===3){
-      if(met.td){
-        const td=met.td;
-        if(!td.onBoat&&td.x<w.sea.shore){met.td=null;ev("Não volte à praia — pouse no convés do navio →");}
-        else if(!td.onBoat){finish(false,"Toque fora do convés do navio.");met.phase=4;}
-        else{
-          const ok=td.vsi<=300&&td.gs<=6&&Math.abs(td.pitchDeg)<=6;
-          met.phase=4;
-          finish(ok, ok?"Pousado no convés — vítima em segurança. Resgate marítimo completo!":"Toque fora de parâmetros (rel: "+fmt(td.vsi)+" fpm / "+fmt(td.gs)+" kt).");
-        }
-      }
-    }
-  },
-  score(w){
-    const t2=(met.phase>=4?met.td:null)||{};
-    const s2=t2.vsi===undefined?0:(t2.vsi<=300?100:band(t2.vsi-300,0,0,220))*0.55+(t2.gs<=6?100:band(t2.gs-6,0,0,10))*0.45;
-    return [
-      m_("Guincho concluído","9 s estável",met.phase>=3?"completo":fmt(clamp(met.hoist/9*100,0,99))+"%",met.phase>=3?100:clamp(met.hoist/9*100,0,60),3),
-      m_("Disciplina de altura","sem voo < 14 ft no mar",fmt(met.lowSea,1)+" s",met.lowSea<0.5?100:band(met.lowSea,0,0.5,6),2),
-      m_("Toque no convés (relativo)","≤ 300 fpm · ≤ 6 kt",t2.vsi===undefined?"—":fmt(t2.vsi)+" fpm · "+fmt(t2.gs,1)+" kt",s2,3),
-      mRpm()
-    ];
-  },
-  chart:"hover"
-},
-{
-  phased:true, id:"free", num:"11", name:"Voo Livre — Mundo Aberto",
+  phased:true, open:true, id:"free", num:"12", name:"Voo Livre — Mundo Aberto",
   desc:"Sem objetivo e sem cronômetro: decole do heliponto e voe para onde quiser. A cidade, as ruas curvas e os campos se formam em volta do helicóptero em qualquer direção, sem fim. Os pedais ficam com você (modo LIVRE 6-DoF) para girar o nariz e mudar de rumo. Termina quando você abrir o MENU — ou se bater.",
   badge:"Exploração · 6-DoF",
-  targets:[["Objetivo","nenhum — explore"],["Pedais","manuais (Q/E ou barra PEDAIS)"],["Prédios da cidade","cenário, sem colisão"],["RPM rotor","101–104% (verde)"],["Fim","botão MENU"]],
+  targets:[["Objetivo","nenhum — explore"],["Pedais","manuais (Q/E ou barra PEDAIS)"],["Prédios da cidade","colidem · dá para pousar nos tetos"],["RPM rotor","101–104% (verde)"],["Fim","botão MENU"]],
   poh:"POH Seç. 2: Vne 102 KIAS. Evite a área sombreada do diagrama altura-velocidade e mantenha o RPM no arco verde durante todo o voo.",
   setup(){
     heli=newHeli({x:0}); collective=0.30;
     env=newEnv({windBase:(2+Math.random()*4)*KT*(Math.random()<.5?-1:1),gustSigma:1.0*KT});
-    if(freePrevAuto===null) freePrevAuto=autoCoord;
-    autoCoord=false;
-    const cf=document.getElementById("chkFree6DoF"); if(cf) cf.checked=true;
+    forceFreeMode();
     return {padX:0,trees:[],zone:null,slope:0,openWorld:true};
   },
   live(dt,st,w){
@@ -1308,8 +1228,8 @@ function startMission(){
   failFired=false;
   failAt=(randFail&&M.id!=="start"&&M.id!=="fail")? 15+Math.random()*180 : -1;
   document.body.classList.toggle("startMode",M.id==="start");
-  if(M.id!=="free") restoreFreeAuto();
-  mission.world=M.setup();
+  if(!M.open) restoreFreeAuto();
+  mission.world=applyOpenWorld(M.setup());
   endInfo=null;
   tSim=0;
   if(window.rebuildWorld3D) window.rebuildWorld3D();
@@ -1814,7 +1734,7 @@ function groundContact(dt,iasK){
   if(h.onGround){
     if(h.onBoat && w && w.boat){
       const bx=boatX();
-      if(Math.abs(h.x-bx)>w.boat.len/2-0.6 || Math.abs(h.z)>6.5){ h.onGround=false; h.onBoat=false; ev("Deslizou do convés!"); return; }
+      if(Math.abs(h.x-bx)>w.boat.len/2-0.6 || Math.abs(h.z-(w.boat.z||0))>6.5){ h.onGround=false; h.onBoat=false; ev("Deslizou do convés!"); return; }
       h.y=CG_GROUND+boatDeck(); h.vy=0;
       h.pitch=lerp(h.pitch,0,clamp(6*dt,0,1)); h.roll=lerp(h.roll,0,clamp(6*dt,0,1)); h.q=0; h.p=0;
       const fr=0.42*G;
@@ -1855,7 +1775,7 @@ function groundContact(dt,iasK){
     }
   }
   if(w&&w.sea){
-    const overBoat=w.boat&&Math.abs(h.x-boatX())<=w.boat.len/2&&Math.abs(h.z)<=6.5;
+    const overBoat=w.boat&&Math.abs(h.x-boatX())<=w.boat.len/2&&Math.abs(h.z-(w.boat.z||0))<=6.5;
     if(h.x>w.sea.shore && !overBoat && (h.y+SKID_Y)<=waveY(h.x,h.z)+0.12){
       crash("QUEDA NO MAR — esquis na água"); return;
     }
@@ -1874,9 +1794,12 @@ function groundContact(dt,iasK){
         crash("COLISÃO COM PRÉDIO"); return;
       }
     }
+    // Prédios da cidade: bater na lateral derruba; por cima do teto é pouso normal
+    const ct=cityTopAt(w,h.x,h.z);
+    if(ct>0 && (h.y+SKID_Y)<ct-0.6 && h.y>0.5){ crash("COLISÃO COM PRÉDIO"); return; }
   }
   if(low<=ter || h.y<=minCG){
-    const overBoat=w&&w.boat&&Math.abs(h.x-boatX())<=w.boat.len/2&&Math.abs(h.z)<=6.5;
+    const overBoat=w&&w.boat&&Math.abs(h.x-boatX())<=w.boat.len/2&&Math.abs(h.z-(w.boat.z||0))<=6.5;
     const baseV=overBoat?w.boat.v:0, deckVy=overBoat?boatDeckVy():0;
     const vsi=Math.abs(Math.min(h.vy-deckVy,0))*MS2FPM;
     const gs=Math.hypot(h.vx-baseV,h.vz)/KT;
@@ -1941,6 +1864,7 @@ function recSample(dt,st){
     map:heli.mapHg,pitch:r2d(heli.pitch),col:collective});
 }
 function showDebrief(){
+  if(!endInfo||!heli||!heli.done) return; // a missão foi reiniciada antes de a avaliação abrir
   gameState="ended";
   const list=mission.score(mission.world);
   let sw=0,ss=0;
@@ -2382,20 +2306,33 @@ function drawGuidance(st){
   const g=mission.guideInfo(st,mission.world);
   if(!g) return;
   const adx=Math.abs(g.dist);
-  const dir=g.dist>0?"→":"←";
   const distTxt=adx>=1000?fmt(adx/1000,1)+" km":fmt(adx)+" m";
-  const curFt=heli.y/FT;
-  const dA=g.altT-curFt;
-  let altTxt = adx<25?"POUSE ▼":(Math.abs(dA)<=30?"ALT OK ✓":(dA>0?"SUBA ↑ "+fmt(dA)+" ft":"DESÇA ↓ "+fmt(-dA)+" ft"));
-  const seg1="🎯 "+g.label+" "+distTxt+" "+dir+" · "+altTxt;
+  const dA=g.altT-heli.y/FT;
+  const altAdv=Math.abs(dA)<=30?"ALT OK ✓":(dA>0?"SUBA ↑ "+fmt(dA)+" ft":"DESÇA ↓ "+fmt(-dA)+" ft");
+  let altTxt;
+  if(g.kind==="gate") altTxt=altAdv;
+  else if(g.kind==="hover") altTxt=adx<14?("PAIRE 10–45 ft · guincho "+fmt(clamp(g.hold,0,1)*100)+"%"):altAdv;
+  else altTxt=adx<25?"POUSE ▼":altAdv;
+  const hasBrg=g.tx!==undefined;
+  const seg1=(hasBrg?"":"🎯 ")+g.label+" · "+distTxt+" · "+altTxt;
   ctx.save();
   ctx.font="700 10.5px Bahnschrift,Arial";
-  const tw=ctx.measureText(seg1).width+20;
+  const pad=hasBrg?40:20;
+  const tw=ctx.measureText(seg1).width+pad;
   const x0=VW()/2-tw/2, yy=Math.max(VH()*0.19+24,104);
-  ctx.fillStyle="rgba(12,16,22,.82)";
-  roundRect(x0,yy,tw,22,6);ctx.fill();
-  ctx.fillStyle="#4fd6ff";ctx.textAlign="center";
-  ctx.fillText(seg1,VW()/2,yy+15);
+  ctx.fillStyle="rgba(12,16,22,.86)";
+  roundRect(x0,yy,tw,24,7);ctx.fill();
+  if(hasBrg){
+    // Seta de rumo: para cima = alvo à frente do nariz; gira conforme o alvo fica à direita/esquerda/atrás
+    const rel=Math.atan2(g.tz-heli.z,g.tx-heli.x)-heli.yaw;
+    ctx.save();
+    ctx.translate(x0+15,yy+12); ctx.rotate(rel);
+    ctx.fillStyle=Math.abs(Math.atan2(Math.sin(rel),Math.cos(rel)))<0.26?"#35d17a":"#ffb300";
+    ctx.beginPath(); ctx.moveTo(0,-8.5); ctx.lineTo(6,6.5); ctx.lineTo(0,3); ctx.lineTo(-6,6.5); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  ctx.fillStyle="#4fd6ff";ctx.textAlign="left";
+  ctx.fillText(seg1,x0+(hasBrg?30:10),yy+16);
   ctx.restore();
 }
 function drawAdvisor(st){
@@ -2527,7 +2464,6 @@ float gHash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
 float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   return mix(mix(gHash(i), gHash(i + vec2(1.0, 0.0)), f.x), mix(gHash(i + vec2(0.0, 1.0)), gHash(i + vec2(1.0, 1.0)), f.x), f.y); }
 `;
-  const hashN = (a, b)=>{ const v = Math.sin(a*127.1 + b*311.7)*43758.5453; return v - Math.floor(v); };
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x6e9bc8);
@@ -2640,7 +2576,8 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   sunLight.shadow.camera.top = shD;
   sunLight.shadow.camera.bottom = -shD;
   sunLight.shadow.camera.near = 20;
-  sunLight.shadow.camera.far = 560;
+  sunLight.shadow.camera.far = 640;
+  const SH_R = new THREE.Vector3(0, 1, 0).cross(SUN_DIR).normalize(), SH_U = new THREE.Vector3().crossVectors(SUN_DIR, SH_R).normalize();
   sunLight.shadow.bias = -0.0004;
   sunLight.shadow.normalBias = 0.025;
   scene.add(sunLight);
@@ -2724,22 +2661,24 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   //  1) gramado sem repetição visível (variação em dezenas/centenas de metros + cor média ao longe)
   //  2) campos cultivados em retalhos fora da cidade
   //  3) malha de ruas, calçadas e quadras da cidade (a mesma grade em que os prédios são plantados)
-  function patchGroundMaterial(mat, avgCol, city){
+  function patchGroundMaterial(mat, avgCol, city, mtnU){
     mat.onBeforeCompile = (sh)=>{
       sh.uniforms.uFarCol = {value: avgCol};
       sh.uniforms.uCityCfg = {value: city};
+      sh.uniforms.uMtn = {value: mtnU};
       sh.uniforms.uCityR = {value: (Math.min(VW(), VH()) < 700 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) ? 1000 : 1900};
       sh.vertexShader = sh.vertexShader
         .replace("#include <common>", "#include <common>\nvarying vec3 vWPos;")
         .replace("#include <begin_vertex>", "#include <begin_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;");
       sh.fragmentShader = sh.fragmentShader
-        .replace("#include <common>", "#include <common>\nvarying vec3 vWPos; uniform vec3 uFarCol; uniform vec3 uCityCfg; uniform float uCityR;\n" + GLSL_NOISE)
+        .replace("#include <common>", "#include <common>\nvarying vec3 vWPos; uniform vec3 uFarCol; uniform vec3 uCityCfg; uniform float uCityR; uniform vec4 uMtn;\n" + GLSL_NOISE)
         .replace("#include <map_fragment>", `#include <map_fragment>
 {
   float m1 = gNoise(vWPos.xz * 0.013);
   float m2 = gNoise(vWPos.xz * 0.0034 + 7.3);
   float m3 = gNoise(vWPos.xz * 0.085 + 3.1);
   float gDist = length(vWPos - cameraPosition);
+  float gPix = max(fwidth(vWPos.x), fwidth(vWPos.z)); // metros de chão por pixel da tela
   diffuseColor.rgb = mix(diffuseColor.rgb, uFarCol, smoothstep(90.0, 800.0, gDist) * 0.88);
   diffuseColor.rgb *= 0.70 + 0.36*m1 + 0.26*m2 + 0.12*m3;
   diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.45, 1.16, 0.72), smoothstep(0.58, 0.86, m2) * 0.55);
@@ -2747,7 +2686,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   // Onde NÃO há cidade: faixa do aeródromo/missões, mar e a montanha da missão 08
   float cAz = abs(vWPos.z);
   float strip = step(cAz, 150.0) * step(-520.0, vWPos.x) * step(vWPos.x, 2420.0);
-  float mtnX = uCityCfg.y * step(1440.0, vWPos.x) * step(vWPos.x, 2480.0) * step(cAz, 340.0);
+  float mtnX = uMtn.w * step(length(vWPos.xz - uMtn.xy), uMtn.z);
   float seaX = step(uCityCfg.x, vWPos.x);
   // Mapa de urbanização (mesma fórmula do código que planta os prédios): centros altos, bairros e zona rural
   float urb = 0.55 + 0.30*sin(vWPos.x*0.00125 + 0.6)*cos(vWPos.z*0.00105 - 0.4) + 0.22*sin((vWPos.x + vWPos.z)*0.00071 + 2.0);
@@ -2761,7 +2700,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   vec3 crop = mix(vec3(0.80, 1.05, 0.75), vec3(1.55, 1.30, 0.70), smoothstep(0.35, 0.90, fh));
   crop = mix(crop, vec3(1.30, 0.98, 0.72), step(0.88, fh));
   float hedge = 1.0 - smoothstep(0.012, 0.024, min(min(ffr.x, 1.0 - ffr.x), min(ffr.y, 1.0 - ffr.y) * 1.5));
-  hedge *= 1.0 - smoothstep(500.0, 1200.0, gDist);
+  hedge *= 1.0 - smoothstep(1.2, 3.5, gPix);
   diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * crop * (1.0 - 0.55*hedge), fieldK * 0.8);
 
   if(inCity > 0.01){
@@ -2770,13 +2709,14 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
                    vWPos.z + 50.0*sin(vWPos.x*0.0043 + 0.7) + 12.0*sin(vWPos.x*0.0125));
     vec2 cm = mod(cq + 45.0, 90.0) - 45.0;
     float dR = min(abs(cm.x), abs(cm.y));
-    float road = 1.0 - smoothstep(6.6, 7.0, dR);
-    float walk = 1.0 - smoothstep(9.6, 10.0, dR);
+    float aaR = clamp(gPix * 0.75, 0.03, 4.0);
+    float road = 1.0 - smoothstep(6.8 - aaR, 6.8 + aaR, dR);
+    float walk = 1.0 - smoothstep(9.8 - aaR, 9.8 + aaR, dR);
     vec3 lot = vec3(0.115, 0.115, 0.120) * (0.80 + 0.40*m3);
     vec3 asph = vec3(0.028, 0.030, 0.034) * (0.80 + 0.50*m3);
     float along = abs(cm.x) < abs(cm.y) ? cq.y : cq.x;
     float dash = step(0.5, fract(along / 9.0)) * (1.0 - smoothstep(0.14, 0.24, dR)) * step(7.5, max(abs(cm.x), abs(cm.y)));
-    dash *= 1.0 - smoothstep(350.0, 800.0, gDist);
+    dash *= 1.0 - smoothstep(0.08, 0.30, gPix);
     asph = mix(asph, vec3(0.62, 0.58, 0.40), dash);
     float cFar = smoothstep(uCityR * 0.78, uCityR * 0.98, gDist);
     vec3 cc = mix(lot, vec3(0.30, 0.30, 0.29), walk * (1.0 - cFar * 0.9));
@@ -2788,7 +2728,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   }
 }`);
     };
-    mat.customProgramCacheKey = ()=>"gnd-macro-v5";
+    mat.customProgramCacheKey = ()=>"gnd-macro-v6";
   }
 
   // Fachada procedural: janelas, lajes, vitrines no térreo e vidro reflexivo calculados no shader.
@@ -2822,8 +2762,8 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   float fWinB = step(0.20, ff.x) * step(ff.x, 0.80) * step(0.24, ff.y) * step(ff.y, 0.82);
   float fWin = mix(fWinB, fWinA, fCurtain);
   fWin = mix(fWin, step(0.05, ff.x) * step(ff.y, 0.86), step(vFL.y, 3.3));
-  float fDist = length(vFW - cameraPosition);
-  float fFar = smoothstep(260.0, 800.0, fDist);
+  float fPix = max(fwidth(fCell.x), fwidth(fCell.y)); // frações de janela por pixel
+  float fFar = smoothstep(0.20, 0.55, fPix);
   fWin = mix(fWin, mix(0.34, 0.78, fCurtain), fFar) * fSide;
   vec3 fWall = mix(vec3(0.60, 0.58, 0.54), vec3(0.30, 0.33, 0.38), fract(fSeed * 3.7));
   fWall = mix(fWall, vec3(0.46, 0.27, 0.20), step(0.78, fract(fSeed * 5.3)));
@@ -2839,7 +2779,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
         .replace("#include <metalnessmap_fragment>", "#include <metalnessmap_fragment>\n  metalnessFactor = mix(metalnessFactor, 0.70, fWin);")
         .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\n  totalEmissiveRadiance += fEmis;");
     };
-    mat.customProgramCacheKey = ()=>"facade-v1";
+    mat.customProgramCacheKey = ()=>"facade-v2";
     return mat;
   }
   const facadeMat = makeFacadeMaterial();
@@ -2862,12 +2802,15 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   float sw4 = gNoise(vSPos.xz * 0.0045 + 2.0);
   float sDist = length(vSPos - cameraPosition);
   float sFine = gNoise(vSPos.xz * 1.7 - vec2(uSeaT * 0.6, uSeaT * 1.1));
-  float sCaps = smoothstep(0.46, 0.62, sw1 * sFine + sw2 * 0.06) * smoothstep(0.40, 0.72, sw3) * (1.0 - smoothstep(300.0, 900.0, sDist));
+  float sCaps = smoothstep(0.46, 0.62, sw1 * sFine + sw2 * 0.06) * smoothstep(0.40, 0.72, sw3) * (1.0 - smoothstep(300.0, 900.0, sDist)) * (1.0 - smoothstep(0.18, 0.50, max(fwidth(vSPos.x), fwidth(vSPos.z))));
   diffuseColor.rgb *= 0.86 + 0.14 * sw3 + 0.16 * sw4;
   diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.86, 0.93, 0.97), sCaps * 0.55);`)
-        .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\n  roughnessFactor = mix(roughnessFactor, 0.65, sCaps);");
+        .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\n  roughnessFactor = mix(roughnessFactor, 0.65, sCaps);")
+        .replace("#include <normal_fragment_maps>", THREE.ShaderChunk.normal_fragment_maps.replace(
+          "vec3 mapN = texture2D( normalMap, vNormalMapUv ).xyz * 2.0 - 1.0;",
+          "vec3 mapN = texture2D( normalMap, vNormalMapUv ).xyz * 2.0 - 1.0;\n\tmapN.xy = mapN.xy * 0.55 + (texture2D( normalMap, vSPos.xz * 0.031 + uSeaT * vec2(0.012, -0.009) ).xy * 2.0 - 1.0) * 0.75 + (texture2D( normalMap, vSPos.zx * 0.0113 - uSeaT * vec2(0.006, 0.004) ).xy * 2.0 - 1.0) * 0.60;\n\tmapN = normalize( mapN );"));
     };
-    mat.customProgramCacheKey = ()=>"sea-v3" + (mat.vertexColors ? "c" : "n");
+    mat.customProgramCacheKey = ()=>"sea-v5" + (mat.vertexColors ? "c" : "n");
   }
 
   function makeAsphaltTextures(){
@@ -3011,12 +2954,10 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
     const TAU = Math.PI * 2;
     // 6 oitavas de ondas periódicas (100% seamless/sem emendas)
     const waves = [
-      {fx: 2, fy: 1, amp: 0.42, ph: 0.3},
-      {fx: -3, fy: 2, amp: 0.30, ph: 1.7},
-      {fx: 5, fy: -4, amp: 0.22, ph: 2.9},
-      {fx: 8, fy: 6, amp: 0.14, ph: 0.8},
-      {fx: -11, fy: 9, amp: 0.09, ph: 4.1},
-      {fx: 17, fy: -13, amp: 0.05, ph: 2.2}
+      {fx: 3, fy: 1, amp: 0.34, ph: 0.3}, {fx: -2, fy: 5, amp: 0.30, ph: 1.7}, {fx: 7, fy: -3, amp: 0.22, ph: 2.9},
+      {fx: 4, fy: 9, amp: 0.18, ph: 0.8}, {fx: -11, fy: 6, amp: 0.13, ph: 4.1}, {fx: 13, fy: 2, amp: 0.11, ph: 2.2},
+      {fx: -5, fy: -12, amp: 0.09, ph: 5.3}, {fx: 16, fy: -9, amp: 0.07, ph: 1.1}, {fx: 9, fy: 17, amp: 0.05, ph: 3.6},
+      {fx: -19, fy: 11, amp: 0.04, ph: 0.5}
     ];
     for(let y=0; y<sz; y++){
       const v = y / sz;
@@ -3059,7 +3000,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   const seaNormalTex2 = seaNormalTex.clone();
   seaNormalTex2.needsUpdate = true;
   seaNormalTex2.anisotropy = MAX_ANISO;
-  seaNormalTex2.repeat.set(420, 380);
+  seaNormalTex2.repeat.set(1454, 1454);
 
   function enableShadowsRecursive(obj, cast=true, receive=true){
     obj.traverse(ch=>{ if(ch.isMesh){ ch.castShadow = cast; ch.receiveShadow = receive; } });
@@ -3518,7 +3459,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
     const tex = new THREE.CanvasTexture(c);
     if(THREE.SRGBColorSpace !== undefined) tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = MAX_ANISO;
-    const mat = new THREE.MeshStandardMaterial({map: tex, transparent: true, roughness: 0.4, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2});
+    const mat = new THREE.MeshStandardMaterial({map: tex, transparent: true, roughness: 0.4, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4});
     for(const side of [-1, 1]){
       const d = new THREE.Mesh(new THREE.PlaneGeometry(0.92, 0.17), mat);
       d.position.set(-2.05, -0.37, side*0.128); d.rotation.y = side > 0 ? 0 : Math.PI; d.rotation.z = side > 0 ? -0.035 : 0.035;
@@ -3618,14 +3559,14 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   // --- ANÉIS DE DOWNWASH DO ROTOR ---
   const downwashGroup = new THREE.Group(); scene.add(downwashGroup); const dwRings = [];
   for(let i=0; i<3; i++){
-    const rm = new THREE.Mesh(new THREE.RingGeometry(2.2 + i*0.8, 2.55 + i*0.85, 32), new THREE.MeshBasicMaterial({color: 0xd8cdb8, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false}));
+    const rm = new THREE.Mesh(new THREE.RingGeometry(2.2 + i*0.8, 2.55 + i*0.85, 32), new THREE.MeshBasicMaterial({color: 0xd8cdb8, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -24}));
     rm.rotation.x = -Math.PI/2; downwashGroup.add(rm); dwRings.push(rm);
   }
 
   // --- AUXILIARES DE ALTURA ---
-  const shadowBlob = new THREE.Mesh(new THREE.CircleGeometry(3.2, 28), new THREE.MeshBasicMaterial({color: 0x000000, transparent: true, opacity: 0.34, depthWrite: false}));
+  const shadowBlob = new THREE.Mesh(new THREE.CircleGeometry(3.2, 28), new THREE.MeshBasicMaterial({color: 0x000000, transparent: true, opacity: 0.34, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -24}));
   shadowBlob.rotation.x = -Math.PI/2; scene.add(shadowBlob);
-  const groundRing = new THREE.Mesh(new THREE.RingGeometry(1.1, 1.35, 32), new THREE.MeshBasicMaterial({color: 0x35d17a, transparent: true, opacity: 0.65, side: THREE.DoubleSide, depthWrite: false}));
+  const groundRing = new THREE.Mesh(new THREE.RingGeometry(1.1, 1.35, 32), new THREE.MeshBasicMaterial({color: 0x35d17a, transparent: true, opacity: 0.65, side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -24}));
   groundRing.rotation.x = -Math.PI/2; scene.add(groundRing);
   const dropLineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,-1,0)]);
   const dropLineMat = new THREE.LineBasicMaterial({color: 0x35d17a, transparent: true, opacity: 0.65});
@@ -3636,6 +3577,17 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   let towerBeacon = null, lighthouseBeacon = null, boatWake = null;
   let trafficCars = [], cloudGroups = [], birds = [], smokePuffs = [], partyBulbs = [], ambSirens = [], papiLights = [];
   let seaBobbers = [], cityCars = null, gndFollow = null, horizonRings = [];
+  let opsGates = [];
+  // Facho de luz do alvo atual (fica na cena o tempo todo; só muda de lugar)
+  const opsBeacon = new THREE.Group(); scene.add(opsBeacon); opsBeacon.visible = false;
+  const opsColumn = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 1, 14, 1, true),
+    new THREE.MeshBasicMaterial({color: 0x4fd6ff, transparent: true, opacity: 0.30, depthWrite: false, fog: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending}));
+  opsColumn.scale.y = 520; opsColumn.position.y = 262; opsBeacon.add(opsColumn);
+  const opsRing = new THREE.Mesh(new THREE.RingGeometry(0.90, 1.0, 44),
+    new THREE.MeshBasicMaterial({color: 0xffb300, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -8, polygonOffsetUnits: -32}));
+  opsRing.rotation.x = -Math.PI/2; opsRing.position.y = 0.25; opsBeacon.add(opsRing);
+  let coastFollow = [], gndShoreX = 1e9, seaCell = 8, seaClampX = 0, victimGroup = null, flareMesh = null;
+  const SEA_W = 1500, SEA_T2 = 16000/1454;
   const OPEN_GND = 16000, OPEN_REP = 425, OPEN_TILE = OPEN_GND/OPEN_REP;
 
   // Árvore orgânica realista com tronco + 4 volumes irregulares de folhagem em tons naturais
@@ -3724,7 +3676,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
     const g = new THREE.Group();
     const base = new THREE.Mesh(
       new THREE.PlaneGeometry(pw, pw),
-      new THREE.MeshStandardMaterial({map: isHosp ? padTexHosp : padTexStd, roughness: 0.72, polygonOffset: true, polygonOffsetFactor: -2})
+      new THREE.MeshStandardMaterial({map: isHosp ? padTexHosp : padTexStd, roughness: 0.72, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -12})
     );
     base.rotation.x = -Math.PI/2; base.position.set(px, py+0.025, 0); base.receiveShadow = true; g.add(base);
 
@@ -3863,7 +3815,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   // --- ESTRADA PARALELA COM TRÁFEGO DE CARROS EM MOVIMENTO ---
   function addTrafficRoad(xStart, xEnd, zPos){
     const len = xEnd - xStart;
-    const road = new THREE.Mesh(new THREE.PlaneGeometry(len, 9.5), new THREE.MeshStandardMaterial({map: roadTex, roughness: 0.85, polygonOffset: true, polygonOffsetFactor: -1}));
+    const road = new THREE.Mesh(new THREE.PlaneGeometry(len, 9.5), new THREE.MeshStandardMaterial({map: roadTex, roughness: 0.85, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4}));
     road.rotation.x = -Math.PI/2; road.position.set((xStart+xEnd)/2, 0.018, zPos); road.receiveShadow = true;
     worldGroup.add(road);
 
@@ -3959,22 +3911,8 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   // MUNDO ABERTO: a cidade não é mais um retângulo fixo. Ela é recalculada em volta do helicóptero
   // toda vez que ele cruza uma quadra, sempre com a mesma "receita" (funções determinísticas),
   // então um bairro que você deixou para trás estará igual quando voltar.
-  const PITCH = 90;
   const CITY_R = IS_PHONE ? 1000 : 1900, TREE_R = IS_PHONE ? 380 : 650, CAR_R = 700;
   const CAP_B = IS_PHONE ? 3200 : 9500, CAP_T = IS_PHONE ? 600 : 1800, CAP_P = 300, CAP_C = IS_PHONE ? 60 : 170;
-  // Deformação da malha (mesmas ondas do shader do solo) e mapa de urbanização
-  const WFX = z=>55*Math.sin(z*0.0040) + 14*Math.sin(z*0.0110 + 1.3);
-  const WFZ = x=>50*Math.sin(x*0.0043 + 0.7) + 12*Math.sin(x*0.0125);
-  const WFZd = x=>50*0.0043*Math.cos(x*0.0043 + 0.7) + 12*0.0125*Math.cos(x*0.0125);
-  const urbanAt = (x, z)=>0.55 + 0.30*Math.sin(x*0.00125 + 0.6)*Math.cos(z*0.00105 - 0.4) + 0.22*Math.sin((x + z)*0.00071 + 2.0);
-  const _gp = {x: 0, z: 0};
-  function gridToWorld(u, v){ let x = u, z = v; for(let k=0; k<4; k++){ x = u - WFX(z); z = v - WFZ(x); } _gp.x = x; _gp.z = z; return _gp; }
-  function cityExcluded(w, x, z){
-    if(Math.abs(z) < 150 && x > -520 && x < 2420) return true;        // faixa do aeródromo e das missões
-    if(w.sea && x > w.sea.shore - 80) return true;                     // mar
-    if(w.terrain && x > 1440 && x < 2480 && Math.abs(z) < 340) return true; // montanha
-    return false;
-  }
   const cityTrunkGeo = new THREE.CylinderGeometry(0.22, 0.36, 1, 6); cityTrunkGeo.translate(0, 0.5, 0);
   const cityCrownGeo = new THREE.IcosahedronGeometry(1, 1);
   const cityCrownMat = new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 0.88});
@@ -3982,7 +3920,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   const cityCarMat = new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 0.28, metalness: 0.35});
   const cityRoofMat = new THREE.MeshStandardMaterial({color: 0x8a929c, roughness: 0.6, metalness: 0.3});
   const parkGeo = new THREE.PlaneGeometry(66, 66); parkGeo.rotateX(-Math.PI/2);
-  const parkMat = new THREE.MeshStandardMaterial({color: 0x3f6b33, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -1});
+  const parkMat = new THREE.MeshStandardMaterial({color: 0x3f6b33, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4});
   const _m4 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _q0 = new THREE.Quaternion(), _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _col = new THREE.Color(), _yAxis = new THREE.Vector3(0, 1, 0);
   let cityFx = null;
 
@@ -4031,51 +3969,40 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
       nt++;
     };
     for(let bi = ci - N; bi <= ci + N; bi++) for(let bj = cj - N; bj <= cj + N; bj++){
-      const u0 = (bi + 0.5)*PITCH, v0 = (bj + 0.5)*PITCH;
-      const g0 = gridToWorld(u0, v0), bx = g0.x, bz = g0.z;
-      const dx = bx - px, dz = bz - pz, d2 = dx*dx + dz*dz;
+      const B = cityBlock(w, bi, bj);
+      if(B.kind === 0) continue;
+      const bx = B.bx, bz = B.bz, dx = bx - px, dz = bz - pz, d2 = dx*dx + dz*dz;
       if(d2 > R2) continue;
-      if(cityExcluded(w, bx, bz)) continue;
-      const urb = urbanAt(bx, bz), d = Math.sqrt(d2);
-      if(urb < 0.47){
+      const d = Math.sqrt(d2);
+      if(B.kind === 1){
         // Zona rural: capões de árvores perto do helicóptero
         if(d < TREE_R && hashN(bi*1.7 + 3, bj*2.9 + 1) > 0.45)
           for(let t=0; t<5; t++) addTree(bx + (hashN(bi + t*1.3, bj) - 0.5)*74, bz + (hashN(bi, bj + t*3.1) - 0.5)*74, 7 + hashN(t + bi, bj*1.9)*8);
         continue;
       }
-      const rot = Math.atan(WFZd(bx)), cs = Math.cos(rot), sn = Math.sin(rot);
-      _q.setFromAxisAngle(_yAxis, rot);
+      _q.setFromAxisAngle(_yAxis, B.rot);
       // Arborização das calçadas (só perto: é detalhe de baixa altura)
       if(d < TREE_R){
         for(const ou of [-22, 22]) for(const ov of [-36.4, 36.4]){
-          const gt = gridToWorld(u0 + ou, v0 + ov);
-          if(!cityExcluded(w, gt.x, gt.z)) addTree(gt.x, gt.z, 5.5 + hashN(bi*2.1 + ou, bj*1.7 + ov)*4);
+          const gt = gridToWorld(B.u0 + ou, B.v0 + ov), tx = gt.x, tz = gt.z;
+          if(!cityExcluded(w, tx, tz)) addTree(tx, tz, 5.5 + hashN(bi*2.1 + ou, bj*1.7 + ov)*4);
         }
       }
-      const hb = hashN(bi*3.1 + 0.7, bj*7.3 + 11);
-      if(hb > 0.91){
+      if(B.kind === 2){
         // Quadra-parque
         if(np < CAP_P){ _m4.compose(_v1.set(bx, 0.03, bz), _q, _v2.set(1, 1, 1)); c.parks.setMatrixAt(np++, _m4); }
         if(d < TREE_R*1.6) for(let t=0; t<8; t++) addTree(bx + (hashN(bi + t, bj*1.3) - 0.5)*54, bz + (hashN(bi*1.1, bj + t*3.1) - 0.5)*54, 7 + hashN(t, bi + bj)*7);
         continue;
       }
-      const core = clamp((urb - 0.62)/0.38, 0, 1);
       const edge = clamp((CITY_R - d)/(CITY_R*0.16), 0, 1); // na borda do raio os prédios "nascem" baixos: não pipocam do nada
       if(edge < 0.04) continue;
-      for(let sx=0; sx<2; sx++) for(let sz=0; sz<2; sz++){
-        const r1 = hashN(bi*4.3 + sx*13.3, bj*2.7 + sz*7.7), r2 = hashN(bi*0.7 + sx*5.1 + 9, bj*1.3 + sz*3.9), r3 = hashN(bi*1.9 + sx*1.7 + 4, bj*3.3 - sz*2.3);
-        if(r1 < 0.07 || nb >= CAP_B - 1) continue;
-        const gl = gridToWorld(u0 + (sx - 0.5)*35 + (r2 - 0.5)*3, v0 + (sz - 0.5)*35 + (r3 - 0.5)*3);
-        const lx = gl.x, lz = gl.z;
-        if(cityExcluded(w, lx, lz)) continue;
-        const fw = 16 + r2*10, fd = 16 + r3*10;
-        const tall = r1 < 0.14 + core*0.80;
-        const h = (tall ? 24 + r2*r3*190*core + r3*26 + core*18 : 6.5 + r3*13) * edge;
-        _m4.compose(_v1.set(lx, 0, lz), _q, _v2.set(fw, h, fd)); c.blds.setMatrixAt(nb++, _m4);
-        if(h > 55 && r2 > 0.35){ _m4.compose(_v1.set(lx, 0, lz), _q, _v2.set(fw*0.6, h + 8 + r3*16, fd*0.6)); c.blds.setMatrixAt(nb++, _m4); }
+      for(const L of B.lots){
+        if(nb >= CAP_B - 1) break;
+        _m4.compose(_v1.set(L.x, 0, L.z), _q, _v2.set(L.fw, L.h*edge, L.fd)); c.blds.setMatrixAt(nb++, _m4);
+        if(L.h2){ _m4.compose(_v1.set(L.x, 0, L.z), _q, _v2.set(L.fw*0.6, L.h2*edge, L.fd*0.6)); c.blds.setMatrixAt(nb++, _m4); }
         if(nr < capR){
-          const ox = fw*0.2, oz = -fd*0.2;
-          _m4.compose(_v1.set(lx + ox*cs + oz*sn, h, lz - ox*sn + oz*cs), _q, _v2.set(3 + r1*4, 1.2 + r2*1.6, 3 + r3*3)); c.roofs.setMatrixAt(nr++, _m4);
+          const k = L.h2 ? 0.5 : 1, ox = L.fw*0.2*k, oz = -L.fd*0.2*k;
+          _m4.compose(_v1.set(L.x + ox*B.cs + oz*B.sn, (L.h2 || L.h)*edge, L.z - ox*B.sn + oz*B.cs), _q, _v2.set((3 + L.r1*4)*k, 1.2 + L.r2*1.6, (3 + L.r3*3)*k)); c.roofs.setMatrixAt(nr++, _m4);
         }
       }
     }
@@ -4176,7 +4103,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
         stack.position.set(-L/2 + 32 + c*11.2, 6 + hh/2, 0); g.add(stack);
       }
       g.rotation.y = i ? Math.PI : 0;
-      bob(g, sh + 500 + i*700, (i ? -1 : 1)*(520 + i*90), 0, 0.03, {vx: i ? -3.2 : 2.6, xMin: sh + 250, xMax: sh + 2600, yk: 0.15});
+      bob(g, sh + 500 + i*700, (i ? -1800 : 2100), 0, 0.03, {vx: i ? -3.2 : 2.6, xMin: sh + 250, xMax: sh + 2600, yk: 0.15});
     }
     // Boias de canal: verdes de um lado, vermelhas do outro
     const gBuoyBody = new THREE.CylinderGeometry(0.55, 0.75, 1.6, 10), gBuoyTop = new THREE.ConeGeometry(0.5, 1.6, 8);
@@ -4220,6 +4147,98 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
     }
   }
 
+  // Placa flutuante com o nome do lugar (ajuda a se localizar de longe)
+  function makeLabelSprite(text){
+    const c = document.createElement("canvas"); c.width = 512; c.height = 96;
+    const g = c.getContext("2d");
+    g.font = "bold 54px Arial"; g.textAlign = "center"; g.textBaseline = "middle";
+    g.lineWidth = 9; g.strokeStyle = "rgba(8,12,18,0.85)"; g.strokeText(text, 256, 50);
+    g.fillStyle = "#ffffff"; g.fillText(text, 256, 50);
+    const tex = new THREE.CanvasTexture(c);
+    if(THREE.SRGBColorSpace !== undefined) tex.colorSpace = THREE.SRGBColorSpace;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({map: tex, transparent: true, depthWrite: false, fog: false}));
+    sp.scale.set(64, 12, 1);
+    return sp;
+  }
+  function addSiteLabel(site, y){ const sp = makeLabelSprite(site.label); sp.position.set(site.x, y, site.z); worldGroup.add(sp); }
+
+  // Adereços das operações: anéis do circuito e a cena do acidente na estrada
+  function buildOpsProps3D(w){
+    if(w.gates){
+      const n = w.gates.length;
+      for(let k=0; k<n; k++){
+        const g = w.gates[k], a = w.gates[Math.max(0, k-1)], b = w.gates[Math.min(n-1, k+1)];
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(14, 0.75, 8, 32), new THREE.MeshBasicMaterial({color: 0x4fd6ff, fog: false}));
+        ring.position.set(g[0], g[1], g[2]);
+        ring.rotation.y = Math.atan2(b[0] - a[0], b[2] - a[2]); // o furo do anel fica virado para o sentido do percurso
+        worldGroup.add(ring); opsGates.push(ring);
+      }
+    }
+    if(w.acc){
+      const A = w.acc, g = new THREE.Group(); g.position.set(A.x, 0, A.z); g.rotation.y = A.rot;
+      const rt = roadTex.clone(); rt.needsUpdate = true; rt.repeat.set(54, 1);
+      const road = new THREE.Mesh(new THREE.PlaneGeometry(900, 10), new THREE.MeshStandardMaterial({map: rt, roughness: 0.85, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4}));
+      road.rotation.x = -Math.PI/2; road.position.y = 0.02; road.receiveShadow = true; g.add(road);
+      const car = (x, z, col, tip, yaw)=>{
+        const cg = new THREE.Group(); cg.position.set(x, 0, z); cg.rotation.set(0, yaw || 0, tip || 0);
+        const body = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.9, 1.85), new THREE.MeshPhysicalMaterial({color: col, roughness: 0.25, metalness: 0.25, clearcoat: 0.8})); body.position.y = 0.65; cg.add(body);
+        const top = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.7, 1.65), new THREE.MeshStandardMaterial({color: 0x1e293b, roughness: 0.2, metalness: 0.5})); top.position.set(-0.2, 1.35, 0); cg.add(top);
+        g.add(cg);
+      };
+      car(-9, -1.2, 0xb6413a, 0, 0.5); car(-2, 1.5, 0x3a6fb6, 0.5, -0.9); car(5, -0.6, 0xc9c9c9, 0, 0.2);
+      const cargo = new THREE.Mesh(new THREE.BoxGeometry(8.5, 2.6, 2.4), new THREE.MeshStandardMaterial({color: 0xd8dee6, roughness: 0.5})); cargo.position.set(15, 1.5, 1.2); cargo.rotation.set(0.22, 0.35, 0); g.add(cargo);
+      const cab = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.2, 2.3), new THREE.MeshPhysicalMaterial({color: 0x8a6f3f, roughness: 0.3, clearcoat: 0.6})); cab.position.set(20.4, 1.3, 3.0); cab.rotation.y = 0.35; g.add(cab);
+      const amb = new THREE.Mesh(new THREE.BoxGeometry(4.8, 2.1, 2.1), new THREE.MeshPhysicalMaterial({color: 0xf4f7fa, roughness: 0.25, clearcoat: 0.8})); amb.position.set(-18, 1.25, -1.8); g.add(amb);
+      const ambStripe = new THREE.Mesh(new THREE.BoxGeometry(4.85, 0.35, 2.14), new THREE.MeshBasicMaterial({color: 0xe11d48})); ambStripe.position.set(-18, 1.15, -1.8); g.add(ambStripe);
+      const sRed = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), new THREE.MeshBasicMaterial({color: 0xff2222})); sRed.position.set(-16.8, 2.5, -2.2); g.add(sRed);
+      const sBlu = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), new THREE.MeshBasicMaterial({color: 0x2288ff})); sBlu.position.set(-16.8, 2.5, -1.4); g.add(sBlu);
+      ambSirens.push(sRed, sBlu);
+      const smkMat = new THREE.MeshStandardMaterial({color: 0x3b4048, transparent: true, opacity: 0.45, roughness: 1, depthWrite: false});
+      for(let k=0; k<8; k++){
+        const pf = new THREE.Mesh(new THREE.SphereGeometry(1.2 + (k%3)*0.5, 8, 6), smkMat);
+        pf.position.set(12 + (k%3)*2, 1.5 + k*1.8, 1.5); g.add(pf); smokePuffs.push({mesh: pf, x0: 12 + (k%3)*2, phase: k/8});
+      }
+      // área de pouso marcada ao lado da estrada (26 m para o lado)
+      const zone = new THREE.Mesh(new THREE.RingGeometry(14.6, 16, 48), new THREE.MeshBasicMaterial({color: 0x35d17a, side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -24}));
+      zone.rotation.x = -Math.PI/2; zone.position.set(0, 0.06, 26); g.add(zone);
+      enableShadowsRecursive(g, true, true); zone.castShadow = false; road.castShadow = false;
+      worldGroup.add(g);
+    }
+  }
+
+  function buildLandmarks3D(w){
+    if(!w.open) return;
+    const T = SITES.torre, Hs = SITES.hosp, Mr = SITES.marina, P = SITES.plat;
+    // Torre Central: o prédio mais alto do centro, com heliponto no topo
+    addBuilding3D(T.x, T.z, T.w, T.wz, T.h, false);
+    { const pd = makePadMesh(T.x, T.h, 20, false); pd.position.z = T.z; worldGroup.add(pd); addSiteLabel(T, T.h + 26); }
+    // Hospital com heliponto de emergência
+    addBuilding3D(Hs.x, Hs.z, Hs.w, Hs.wz, Hs.h, true);
+    { const pd = makePadMesh(Hs.x, Hs.h, 22, true); pd.position.z = Hs.z; worldGroup.add(pd); addSiteLabel(Hs, Hs.h + 24); }
+    if(w.mtn) addSiteLabel(SITES.pico, w.mtn.h + 30);
+    if(!w.sea) return;
+    // Marina na orla: sede com heliponto no teto e trapiche com barcos
+    addBuilding3D(Mr.x, Mr.z, Mr.w, Mr.wz, Mr.h, false);
+    { const pd = makePadMesh(Mr.x, Mr.h, 18, false); pd.position.z = Mr.z; worldGroup.add(pd); addSiteLabel(Mr, Mr.h + 22); }
+    const mWood = new THREE.MeshStandardMaterial({color: 0x6e4c2f, roughness: 0.9});
+    const jetty = new THREE.Mesh(new THREE.BoxGeometry(130, 0.35, 4.2), mWood); jetty.position.set(w.sea.shore + 35, 1.5, Mr.z + 30); jetty.castShadow = true; jetty.receiveShadow = true; worldGroup.add(jetty);
+    for(let k=0; k<10; k++) for(const sd of [-1.8, 1.8]){ const post = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.2, 5, 6), mWood); post.position.set(w.sea.shore - 22 + k*13, -0.6, Mr.z + 30 + sd); worldGroup.add(post); }
+    // Plataforma de petróleo no mar: convés com heliponto, torre de perfuração e tocha
+    const pg = new THREE.Group(); pg.position.set(P.x, 0, P.z);
+    const mSteelY = new THREE.MeshStandardMaterial({color: 0xd9a521, roughness: 0.55, metalness: 0.3});
+    const mDeck = new THREE.MeshStandardMaterial({color: 0x59606b, roughness: 0.7, metalness: 0.3});
+    for(const sx of [-1, 1]) for(const sz of [-1, 1]){ const leg = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.4, 40, 10), mSteelY); leg.position.set(sx*13, 8, sz*13); pg.add(leg); }
+    for(const sz of [-13, 13]){ const br = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 30, 6), mSteelY); br.rotation.z = Math.PI/2 - 0.5; br.position.set(0, 10, sz); pg.add(br); }
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(P.w, 3.2, P.wz), mDeck); deck.position.y = P.h - 1.6; pg.add(deck);
+    const quarters = new THREE.Mesh(new THREE.BoxGeometry(10, 8, 12), new THREE.MeshStandardMaterial({color: 0xe7ebef, roughness: 0.5})); quarters.position.set(-10, P.h + 4, 9); pg.add(quarters);
+    for(const sx of [-1, 1]) for(const sz of [-1, 1]){ const dl = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 42, 5), mSteelY); dl.position.set(-9 + sx*2.2, P.h + 20, -9 + sz*2.2); dl.rotation.z = -sx*0.085; dl.rotation.x = sz*0.085; pg.add(dl); }
+    const boomArm = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 26, 6), mSteelY); boomArm.rotation.z = Math.PI/2 - 0.45; boomArm.position.set(-24, P.h + 7, -12); pg.add(boomArm);
+    flareMesh = new THREE.Mesh(new THREE.SphereGeometry(1.6, 10, 8), new THREE.MeshBasicMaterial({color: 0xffa23a})); flareMesh.position.set(-35.5, P.h + 13.5, -12); pg.add(flareMesh);
+    enableShadowsRecursive(pg, true, true);
+    worldGroup.add(pg);
+    { const pd = makePadMesh(P.x + P.padDx, P.h, 14, false); pd.position.z = P.z + P.padDz; worldGroup.add(pd); addSiteLabel(P, P.h + 62); }
+  }
+
   function rebuildWorld3D(){
     while(worldGroup.children.length > 0){
       const ch = worldGroup.children[0];
@@ -4227,45 +4246,45 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
       if(ch.isInstancedMesh && ch.dispose) ch.dispose();
     }
     seaBobbers = []; cityCars = null; cityFx = null; gndFollow = null; horizonRings = [];
+    coastFollow = []; gndShoreX = 1e9; victimGroup = null; flareMesh = null; opsGates = [];
     seaMesh = null; farSeaMesh = null; boatGroup = null; windsockCone = null; hoistLine = null;
     towerBeacon = null; lighthouseBeacon = null; boatWake = null;
     trafficCars = []; cloudGroups = []; birds = []; smokePuffs = []; partyBulbs = []; ambSirens = []; papiLights = [];
     const w = mission ? mission.world : {padX:0,trees:[],zone:null};
 
-    const city = new THREE.Vector3(w.sea ? w.sea.shore - 80 : 1e9, w.terrain ? 1 : 0, 1);
+    const city = new THREE.Vector3(w.sea ? w.sea.shore - 80 : 1e9, 0, 1);
+    const mtnU = w.mtn ? new THREE.Vector4(w.mtn.x, w.mtn.z, w.mtn.r + 50, 1) : new THREE.Vector4(0, 0, 0, 0);
     const gndMat = new THREE.MeshStandardMaterial({
       map: grassPBR.diff, bumpMap: grassPBR.bump, bumpScale: 0.18, roughness: 0.92, metalness: 0.0
     });
-    patchGroundMaterial(gndMat, grassPBR.avg, city);
+    patchGroundMaterial(gndMat, grassPBR.avg, city, mtnU);
 
+    // Chão "infinito": um plano grande que anda junto com o helicóptero em passos de um ladrilho de textura.
+    // Onde há litoral, a borda leste do plano para na linha da praia.
+    grassPBR.diff.repeat.set(OPEN_REP, OPEN_REP); grassPBR.bump.repeat.set(OPEN_REP, OPEN_REP);
+    const gnd = new THREE.Mesh(new THREE.PlaneGeometry(OPEN_GND, OPEN_GND), gndMat);
+    gnd.rotation.x = -Math.PI/2; gnd.receiveShadow = true; worldGroup.add(gnd);
+    gndFollow = gnd;
     if(w.sea){
-      grassPBR.diff.repeat.set(170, 85); grassPBR.bump.repeat.set(170, 85);
-      const landLen = w.sea.shore + 2200;
-      const gnd = new THREE.Mesh(new THREE.PlaneGeometry(landLen, 3200), gndMat);
-      gnd.rotation.x = -Math.PI/2; gnd.position.set(w.sea.shore - landLen/2 - 15, 0, 0); gnd.receiveShadow = true; worldGroup.add(gnd);
-
-      const beachGeo = new THREE.PlaneGeometry(45, 3200, 12, 1); beachGeo.rotateX(-Math.PI/2);
+      gndShoreX = w.sea.shore;
+      // Faixa de areia: plana até a linha d'água e depois mergulha suavemente
+      const beachGeo = new THREE.PlaneGeometry(100, OPEN_GND, 20, 1); beachGeo.rotateX(-Math.PI/2);
       const bPos = beachGeo.attributes.position;
-      for(let i=0; i<bPos.count; i++){ const lx = bPos.getX(i), t = clamp((lx + 22.5)/45, 0, 1); bPos.setY(i, 0.05 - t*t*1.8); }
+      for(let i=0; i<bPos.count; i++){ const t = clamp((bPos.getX(i) + 5)/45, 0, 1); bPos.setY(i, 0.05 - t*t*1.8); }
       beachGeo.computeVertexNormals();
-      const beachMesh = new THREE.Mesh(beachGeo, new THREE.MeshStandardMaterial({color: 0xdcc79c, roughness: 0.92}));
-      beachMesh.position.set(w.sea.shore + 4, 0, 0); beachMesh.receiveShadow = true; worldGroup.add(beachMesh);
-
-      const seabed = new THREE.Mesh(new THREE.PlaneGeometry(3400, 3200), new THREE.MeshStandardMaterial({color: 0x072238, roughness: 0.95}));
-      seabed.rotation.x = -Math.PI/2; seabed.position.set(w.sea.shore + 1700, -8.0, 0); worldGroup.add(seabed);
-    } else {
-      // Chão "infinito": um plano grande que anda junto com o helicóptero em passos de um ladrilho de textura
-      grassPBR.diff.repeat.set(OPEN_REP, OPEN_REP); grassPBR.bump.repeat.set(OPEN_REP, OPEN_REP);
-      const gnd = new THREE.Mesh(new THREE.PlaneGeometry(OPEN_GND, OPEN_GND), gndMat);
-      gnd.rotation.x = -Math.PI/2; gnd.receiveShadow = true; worldGroup.add(gnd);
-      gndFollow = gnd;
+      const beachMesh = new THREE.Mesh(beachGeo, new THREE.MeshStandardMaterial({color: 0xdcc79c, roughness: 0.92, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4}));
+      beachMesh.position.set(w.sea.shore - 15, 0, 0); beachMesh.receiveShadow = true; worldGroup.add(beachMesh);
+      coastFollow.push(beachMesh);
+      const seabed = new THREE.Mesh(new THREE.PlaneGeometry(OPEN_GND, OPEN_GND), new THREE.MeshStandardMaterial({color: 0x072238, roughness: 0.95}));
+      seabed.rotation.x = -Math.PI/2; seabed.position.set(w.sea.shore + OPEN_GND/2, -8.0, 0); worldGroup.add(seabed);
+      coastFollow.push(seabed);
     }
 
     // Pista de asfalto PBR realista com bump map e marcações aeronáuticas
-    const rwyLen = w.sea ? w.sea.shore + 80 : 2200;
+    const rwyLen = 2200;
     const rwy = new THREE.Mesh(
       new THREE.PlaneGeometry(rwyLen, 16),
-      new THREE.MeshStandardMaterial({map: asphaltPBR.diff, bumpMap: asphaltPBR.bump, bumpScale: 0.08, roughness: 0.84, polygonOffset: true, polygonOffsetFactor: -1})
+      new THREE.MeshStandardMaterial({map: asphaltPBR.diff, bumpMap: asphaltPBR.bump, bumpScale: 0.08, roughness: 0.84, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4})
     );
     rwy.rotation.x = -Math.PI/2; rwy.position.set(rwyLen/2 - 120, 0.015, 0); rwy.receiveShadow = true; worldGroup.add(rwy);
 
@@ -4279,10 +4298,10 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
 
     if(w.padX < 1e8){
       // Pátio de concreto (Apron) conectando a pista aos hangares
-      const apron = new THREE.Mesh(new THREE.PlaneGeometry(78, 34), new THREE.MeshStandardMaterial({color: 0x565d63, roughness: 0.88, polygonOffset: true, polygonOffsetFactor: -1}));
+      const apron = new THREE.Mesh(new THREE.PlaneGeometry(78, 34), new THREE.MeshStandardMaterial({color: 0x565d63, roughness: 0.88, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4}));
       apron.rotation.x = -Math.PI/2; apron.position.set(w.padX + 2, 0.014, -22); apron.receiveShadow = true; worldGroup.add(apron);
       // Linha amarela de táxi no pátio
-      const taxiLine = new THREE.Mesh(new THREE.PlaneGeometry(58, 0.32), new THREE.MeshBasicMaterial({color: 0xf2be22}));
+      const taxiLine = new THREE.Mesh(new THREE.PlaneGeometry(58, 0.32), new THREE.MeshBasicMaterial({color: 0xf2be22, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -12}));
       taxiLine.rotation.x = -Math.PI/2; taxiLine.position.set(w.padX + 2, 0.02, -16); worldGroup.add(taxiLine);
 
       worldGroup.add(makePadMesh(w.padX, 0, PAD_W, false));
@@ -4342,7 +4361,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
     }
 
     if(w.plat){ const pl = w.plat; const isHosp = w.platDecor === "hospital"; addBuilding3D(pl.x, 0, pl.w, pl.w, pl.h, isHosp); worldGroup.add(makePadMesh(pl.x, pl.h, pl.w, isHosp)); }
-    if(w.solids){ for(const b of w.solids) addBuilding3D(b.x, b.z||0, b.w, b.wz||b.w, b.h, false); }
+    if(w.solids){ for(const b of w.solids) if(!b.site) addBuilding3D(b.x, b.z||0, b.w, b.wz||b.w, b.h, false); }
     for(let i=0; i<38; i++){
       const bx = -120 + i*65 + ((i*37)%25); if(w.sea && bx > w.sea.shore - 30) continue;
       const side = (i%2===0) ? 1 : -1, bz = side * (32 + ((i*53)%55)), bw = 14 + ((i*19)%14), bh = 12 + ((i*29)%48);
@@ -4360,15 +4379,11 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
     }
 
     // Estrada paralela com carros em movimento + Lago natural nas missões terrestres
-    if(!w.sea){
-      addTrafficRoad(-220, 2100, 58);
-      addLake3D(240, -105, 58, 34);
-    } else {
-      addTrafficRoad(-180, w.sea.shore - 28, 52);
-    }
+    addTrafficRoad(-220, 2100, 58);
+    addLake3D(240, -105, 58, 34);
     if(w.zone && w.zone.stop > 0){
       const zLen = w.zone.stop - w.zone.start, zMid = (w.zone.start + w.zone.stop)/2, zY = terrainH(zMid, 0);
-      const zMesh = new THREE.Mesh(new THREE.PlaneGeometry(zLen, 16), new THREE.MeshBasicMaterial({color: 0x35d17a, transparent: true, opacity: 0.28, side: THREE.DoubleSide}));
+      const zMesh = new THREE.Mesh(new THREE.PlaneGeometry(zLen, 16), new THREE.MeshBasicMaterial({color: 0x35d17a, transparent: true, opacity: 0.28, side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -12}));
       zMesh.rotation.x = -Math.PI/2; zMesh.position.set(zMid, zY+0.03, 0); worldGroup.add(zMesh);
       const gateCol1 = (mission&&mission.id==="qstop") ? 0xff5449 : 0x35d17a, gateCol2 = (mission&&mission.id==="qstop") ? 0xffb300 : 0x35d17a;
       for(const [gx, col] of [[w.zone.start, gateCol1], [w.zone.stop, gateCol2]]){
@@ -4391,13 +4406,40 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
         worldGroup.add(bulb); partyBulbs.push(bulb);
       }
     }
-    if(w.terrain){
-      const mGeo = new THREE.PlaneGeometry(950, 600, 70, 24); mGeo.rotateX(-Math.PI/2);
-      const pos = mGeo.attributes.position;
-      for(let i=0; i<pos.count; i++){ const vx = pos.getX(i) + 1960, vz = pos.getZ(i), hVal = w.terrain(vx, vz) * Math.max(0.2, 1 - Math.pow(vz/340, 2)); pos.setY(i, hVal); }
-      mGeo.computeVertexNormals();
-      const mMesh = new THREE.Mesh(mGeo, new THREE.MeshStandardMaterial({color: 0x5c6458, roughness: 0.88})); mMesh.position.set(1960, 0, 0); mMesh.receiveShadow = true; worldGroup.add(mMesh);
-      if(w.mtnPad) worldGroup.add(makePadMesh(w.mtnPad.x, w.mtnPad.h, 24, false));
+    if(w.mtn && w.terrain){
+      // Serra: malha gerada pela MESMA função de altura que a física usa, pintada por faixa de altitude
+      const M = w.mtn, seg = IS_PHONE ? 56 : 100;
+      const mGeo = new THREE.PlaneGeometry(M.r*2, M.r*2, seg, seg); mGeo.rotateX(-Math.PI/2);
+      const pos = mGeo.attributes.position, cols = new Float32Array(pos.count*3);
+      for(let i=0; i<pos.count; i++){
+        const wx = pos.getX(i) + M.x, wz = pos.getZ(i) + M.z, hV = w.terrain(wx, wz);
+        pos.setY(i, hV - 0.4*(1 - Math.min(1, hV/4)));
+        const k = hV/M.h, n = hashN(Math.round(wx*0.05), Math.round(wz*0.05));
+        let r, g, b;
+        if(k < 0.40){ r = 0.030 + 0.03*n; g = 0.085 + 0.05*n; b = 0.028 + 0.02*n; }
+        else if(k < 0.75){ const t = (k - 0.40)/0.35; r = lerp(0.045, 0.17, t) + 0.03*n; g = lerp(0.10, 0.155, t) + 0.03*n; b = lerp(0.035, 0.12, t) + 0.02*n; }
+        else { const t = (k - 0.75)/0.25; r = lerp(0.17, 0.30, t) + 0.05*n; g = lerp(0.155, 0.29, t) + 0.05*n; b = lerp(0.12, 0.28, t) + 0.05*n; }
+        cols[i*3] = r; cols[i*3+1] = g; cols[i*3+2] = b;
+      }
+      mGeo.setAttribute("color", new THREE.BufferAttribute(cols, 3)); mGeo.computeVertexNormals();
+      const mMesh = new THREE.Mesh(mGeo, new THREE.MeshStandardMaterial({vertexColors: true, roughness: 0.94}));
+      mMesh.position.set(M.x, 0, M.z); mMesh.receiveShadow = true; worldGroup.add(mMesh);
+      const pk = makePadMesh(M.x, M.h, 22, false); pk.position.z = M.z; worldGroup.add(pk);
+      // Mata de pinheiros nas encostas baixas (instanciada)
+      const nPine = IS_PHONE ? 220 : 620;
+      const pineGeo = new THREE.ConeGeometry(1, 1, 6); pineGeo.translate(0, 0.5, 0);
+      const pines = new THREE.InstancedMesh(pineGeo, cityCrownMat, nPine);
+      let pn = 0;
+      for(let i=0; i<nPine*3 && pn<nPine; i++){
+        const a = hashN(i, 1.7)*Math.PI*2, rr = M.r*(0.30 + 0.68*hashN(i*1.3, 5.1));
+        const px = M.x + Math.cos(a)*rr, pz = M.z + Math.sin(a)*rr, hV = w.terrain(px, pz);
+        if(hV < 2 || hV > M.h*0.62) continue;
+        const ph = 9 + hashN(i, 9.3)*8;
+        _m4.compose(_v1.set(px, hV - 0.5, pz), _q0, _v2.set(ph*0.26, ph, ph*0.26)); pines.setMatrixAt(pn, _m4);
+        const gc = hashN(i*2.1, 3.3); _col.setRGB(0.06 + gc*0.05, 0.18 + gc*0.10, 0.08 + gc*0.04); pines.setColorAt(pn, _col);
+        pn++;
+      }
+      pines.count = pn; pines.castShadow = !IS_PHONE; pines.frustumCulled = false; worldGroup.add(pines);
     }
     if(w.clouds){
       const c = w.clouds, cMat = new THREE.MeshStandardMaterial({color: 0xf1f5f9, transparent: true, opacity: 0.58, roughness: 1});
@@ -4458,14 +4500,17 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
       });
       farSeaMat.color.setRGB(0.028, 0.20, 0.40);
       patchSeaMaterial(farSeaMat);
-      farSeaMesh = new THREE.Mesh(new THREE.PlaneGeometry(4600, 4200), farSeaMat);
+      farSeaMesh = new THREE.Mesh(new THREE.PlaneGeometry(OPEN_GND, OPEN_GND), farSeaMat);
       farSeaMesh.rotation.x = -Math.PI/2;
-      farSeaMesh.position.set(w.sea.shore + 2310, -1.35, 0); // abaixo do vale mais fundo das ondas: não vaza mais por baixo da malha animada
+      farSeaMesh.position.set(w.sea.shore + 10 + OPEN_GND/2, -1.35, 0); // abaixo do vale mais fundo das ondas: não vaza mais por baixo da malha animada
       worldGroup.add(farSeaMesh);
 
       // Malha costeira e de resgate em ALTA DEFINIÇÃO (150 x 64 segmentos = ondas detalhadas e suaves!)
-      const seaW = 1900, seaD = 960;
-      const seaGeo = new THREE.PlaneGeometry(seaW, seaD, IS_PHONE ? 150 : 230, IS_PHONE ? 64 : 110);
+      const seaSeg = IS_PHONE ? 100 : 190;
+      seaCell = SEA_W/seaSeg;
+      seaClampX = Math.ceil((w.sea.shore - 6 + SEA_W/2)/seaCell)*seaCell;
+      seaNormalTex.repeat.set(seaSeg*(IS_PHONE ? 2 : 1), seaSeg*(IS_PHONE ? 2 : 1));
+      const seaGeo = new THREE.PlaneGeometry(SEA_W, SEA_W, seaSeg, seaSeg);
       seaGeo.rotateX(-Math.PI/2);
       const count = seaGeo.attributes.position.count;
       const colors = new Float32Array(count * 3);
@@ -4473,7 +4518,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
       const seaMat = new THREE.MeshPhysicalMaterial({
         vertexColors: true,
         normalMap: seaNormalTex,
-        normalScale: new THREE.Vector2(0.48, 0.48),
+        normalScale: new THREE.Vector2(0.42, 0.42),
         roughness: 0.26,
         metalness: 0.10,
         clearcoat: 0.25,
@@ -4484,11 +4529,11 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
       });
       patchSeaMaterial(seaMat);
       seaMesh = new THREE.Mesh(seaGeo, seaMat);
-      seaMesh.position.set(w.sea.shore + seaW/2 - 6, 0.05, 0);
+      seaMesh.position.set(seaClampX, 0.05, 0);
       seaMesh.receiveShadow = true;
       worldGroup.add(seaMesh);
       if(w.victim){
-        const vg = new THREE.Group(); vg.position.set(w.victim.x, 0.2, 0);
+        const vg = new THREE.Group(); vg.position.set(w.victim.x, 0.2, w.victim.z || 0); victimGroup = vg;
         const buoy = new THREE.Mesh(new THREE.TorusGeometry(1.1, 0.28, 8, 18), new THREE.MeshBasicMaterial({color: 0xff5449})); buoy.rotation.x = Math.PI/2; vg.add(buoy);
         const head = new THREE.Mesh(new THREE.SphereGeometry(0.45, 10, 10), new THREE.MeshBasicMaterial({color: 0xffd23c})); head.position.y = 0.45; vg.add(head); worldGroup.add(vg);
       }
@@ -4549,6 +4594,8 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
     addAmbientClouds3D();
     addAmbientBirds3D();
     initCity3D(w);
+    buildLandmarks3D(w);
+    buildOpsProps3D(w);
     if(w.sea) addSeaLife3D(w);
   }
 
@@ -4713,8 +4760,8 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   window.render3DScene = function(){
     if(!heli) return;
     const w = mission ? mission.world : {};
-    const terY = (w.sea && heli.x > w.sea.shore && (!w.boat || Math.abs(heli.x-boatX())>w.boat.len/2))
-                 ? waveY(heli.x, heli.z) : terrainH(heli.x, heli.z);
+    const tH = terrainH(heli.x, heli.z);
+    const terY = (w.sea && heli.x > w.sea.shore && tH < 0.5) ? waveY(heli.x, heli.z) : tH;
 
     const minVisualY = terY + minSkidClearance(heli);
     const renderY = Math.max(heli.y, minVisualY);
@@ -4725,8 +4772,14 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
     heliRoot.rotation.z = heli.pitch;
     heliRoot.rotation.x = heli.roll;
 
-    sunLight.position.set(heli.x + SUN_DIR.x*185, renderY + SUN_DIR.y*185, heli.z + SUN_DIR.z*185);
-    sunLight.target.position.set(heli.x, terY, heli.z);
+    {
+      const texel = 160 / sunLight.shadow.mapSize.x;
+      const ca = heli.x*SH_R.x + terY*SH_R.y + heli.z*SH_R.z, cb = heli.x*SH_U.x + terY*SH_U.y + heli.z*SH_U.z;
+      const da = Math.round(ca/texel)*texel - ca, db = Math.round(cb/texel)*texel - cb;
+      const cx = heli.x + SH_R.x*da + SH_U.x*db, cy = terY + SH_R.y*da + SH_U.y*db, cz = heli.z + SH_R.z*da + SH_U.z*db;
+      sunLight.target.position.set(cx, cy, cz);
+      sunLight.position.set(cx + SUN_DIR.x*260, cy + SUN_DIR.y*260, cz + SUN_DIR.z*260);
+    }
     sunLight.target.updateMatrixWorld();
 
     skyDome.position.set(heli.x, 0, heli.z);
@@ -4780,9 +4833,9 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
       }
     }
 
-    const strobeFlash = Math.sin(tSim * 18) > 0.72;
-    strobeLight.intensity = strobeFlash ? 4.5 : 0;
-    strobeMesh.material.color.setHex(strobeFlash ? 0xff7766 : 0x661111);
+    const strobeFlash = (tSim % 1.3) < 0.07;
+    strobeLight.intensity = strobeFlash ? 1.2 : 0;
+    strobeMesh.material.color.setHex(strobeFlash ? 0xd04a3a : 0x661111);
 
     const rSpin = tSim * 28 * (heli.rpm/100);
     mainRotorGroup.rotation.y = rSpin;
@@ -4851,6 +4904,18 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
     }
 
     if(w.sea && seaMesh){
+      // O mar animado acompanha o helicóptero (em passos de uma célula da malha); longe da costa nem é calculado
+      seaMesh.visible = heli.x > w.sea.shore - 2600;
+      if(seaMesh.visible){
+        seaMesh.position.x = Math.max(seaClampX, Math.round(heli.x/seaCell)*seaCell);
+        seaMesh.position.z = Math.round(heli.z/seaCell)*seaCell;
+      }
+      if(farSeaMesh){
+        farSeaMesh.position.x = Math.max(w.sea.shore + 10 + OPEN_GND/2, Math.round(heli.x/SEA_T2)*SEA_T2);
+        farSeaMesh.position.z = Math.round(heli.z/SEA_T2)*SEA_T2;
+      }
+    }
+    if(w.sea && seaMesh && seaMesh.visible){
       // Anima os mapas normais de micro-ondulação para reflexo solar realista na água
       if(seaNormalTex){
         seaNormalTex.offset.x = (tSim * 0.14) % 1;
@@ -4862,10 +4927,10 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
       }
       const pos = seaMesh.geometry.attributes.position;
       const col = seaMesh.geometry.attributes.color;
-      const seaOffX = seaMesh.position.x;
+      const seaOffX = seaMesh.position.x, seaOffZ = seaMesh.position.z;
       for(let i=0; i<pos.count; i++){
         const wx = pos.getX(i) + seaOffX;
-        const wz = pos.getZ(i);
+        const wz = pos.getZ(i) + seaOffZ;
         const distShore = Math.max(0, wx - w.sea.shore);
         const shoreFade = clamp(distShore / 20, 0.08, 1.0);
         const wy = waveY(wx, wz) * shoreFade;
@@ -4879,7 +4944,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
         const baseB = lerp(lerp(0.68, 0.54, shallowK), 0.38, deepK);
 
         // Espuma nas cristas das ondas + linhas de arrebentação na beira da praia
-        const crestFoam = clamp((wy - 0.52) * 1.1, 0, 0.26); // crista só clareia; a espuma solta vem do shader
+        const crestFoam = clamp((wy - 0.55) * 0.6, 0, 0.10); // crista só clareia; a espuma solta vem do shader
         const surfWave = distShore < 24 ? clamp((1 - distShore/24) * (0.55 + 0.45*Math.sin(tSim*2.8 - distShore*0.42)), 0, 0.92) : 0;
         const f = clamp(Math.max(crestFoam, surfWave), 0, 0.92);
 
@@ -4890,7 +4955,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
       seaMesh.geometry.computeVertexNormals();
     }
     if(w.boat && boatGroup){
-      boatGroup.position.set(boatX(), boatDeck() - w.boat.deck, 0);
+      boatGroup.position.set(boatX(), boatDeck() - w.boat.deck, w.boat.z || 0);
       boatGroup.rotation.z = Math.sin(tSim*w.boat.om)*0.03;
     }
     seaTimeU.value = tSim;
@@ -4901,13 +4966,39 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
       b.mesh.rotation.z = (waveY(b.x + 3, b.z) - waveY(b.x - 3, b.z))*0.16*b.rk;
       b.mesh.rotation.x = Math.sin(tSim*0.9 + b.ph)*0.07*b.rk;
     }
-    if(gndFollow) gndFollow.position.set(Math.round(heli.x/OPEN_TILE)*OPEN_TILE, 0, Math.round(heli.z/OPEN_TILE)*OPEN_TILE);
+    if(gndFollow){
+      const gz = Math.round(heli.z/OPEN_TILE)*OPEN_TILE;
+      let gx = Math.round(heli.x/OPEN_TILE)*OPEN_TILE;
+      if(gndShoreX < 1e8) gx = Math.min(gx, Math.floor((gndShoreX + 12 - OPEN_GND/2)/OPEN_TILE)*OPEN_TILE);
+      gndFollow.position.set(gx, 0, gz);
+      for(const cf of coastFollow) cf.position.z = gz;
+    }
+    if(flareMesh) flareMesh.scale.setScalar(0.8 + 0.35*Math.abs(Math.sin(tSim*9.0)) + 0.15*Math.sin(tSim*23.0));
     // As serras ficam sempre no horizonte: andam junto, como um pano de fundo
     for(const hr of horizonRings){ hr.position.x = heli.x + 900*Math.exp(-Math.abs(heli.x)/4000); hr.position.z = heli.z; }
     updateCity3D(heli.x, heli.z, false);
     updateCityCars(heli.x, heli.z);
+    // Alvo da operação: facho de luz + círculo no ponto de pouso/pairado; anel atual do circuito em amarelo
+    {
+      const gi = (gameState === "flying" && mission && mission.guideInfo) ? mission.guideInfo(null, w) : null;
+      if(gi && gi.tx !== undefined && gi.kind !== "gate"){
+        opsBeacon.visible = true; opsBeacon.position.set(gi.tx, gi.ty, gi.tz);
+        opsRing.scale.set(gi.r, gi.r, 1);
+        opsColumn.material.opacity = 0.22 + 0.10*Math.sin(tSim*3.0);
+      } else opsBeacon.visible = false;
+      if(opsGates.length){
+        const cur = gi ? gi.gate : -1;
+        for(let k=0; k<opsGates.length; k++){
+          const rg = opsGates[k];
+          rg.visible = cur >= 0 && k >= cur && k <= cur + 2;
+          rg.material.color.setHex(k === cur ? 0xffb300 : 0x4fd6ff);
+          const sc = k === cur ? 1 + 0.05*Math.sin(tSim*6) : 1; rg.scale.set(sc, sc, sc);
+        }
+      }
+      if(victimGroup) victimGroup.visible = !(met && met.victimUp);
+    }
     if(hoistLine){
-      if(mission&&mission.id==="sea"&&met&&met.phase===1&&met.hoist>0.05&&!heli.onGround){
+      if(met&&met.hoistOn&&!heli.onGround){
         hoistLine.visible = true;
         const pa = hoistLine.geometry.attributes.position.array;
         pa[0]=heli.x; pa[1]=renderY+SKID_Y; pa[2]=heli.z;
@@ -4920,7 +5011,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
     bellyFloor.visible = (camMode === 2);
     update3DPanelTexture();
 
-    const targetFov = (camMode === 2) ? 78 : 54, targetNear = (camMode === 2) ? 0.08 : 0.6;
+    const targetFov = (camMode === 2) ? 78 : 54, targetNear = (camMode === 2) ? 0.18 : 0.6;
     if(Math.abs(camera.fov - targetFov) > 0.1 || camera.near !== targetNear){
       camera.fov = targetFov; camera.near = targetNear;
       camera.updateProjectionMatrix();
@@ -4929,19 +5020,20 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
     if(camMode === 0){
       camera.up.set(0, 1, 0);
       const dist = clamp(12.5 + aglM*0.08, 12.0, 18.0);
-      const az = camOrbitAz + heli.yaw + 0.28;
+      const az = heli.yaw - camOrbitAz - 0.28;
       camera.position.set(
         heli.x - Math.cos(az)*Math.cos(camOrbitEl)*dist,
         Math.max(terY+1.4, renderY + Math.sin(camOrbitEl)*dist + 1.0),
-        heli.z + Math.sin(az)*Math.cos(camOrbitEl)*dist
+        heli.z - Math.sin(az)*Math.cos(camOrbitEl)*dist
       );
       camera.lookAt(heli.x + Math.cos(heli.yaw)*2.5, Math.max(terY, renderY - 0.7), heli.z + Math.sin(heli.yaw)*2.5);
     } else if(camMode === 1){
       camera.up.set(0, 1, 0);
       const gsK = Math.hypot(heli.vx, heli.vz)/KT;
       const dist = clamp(18 + gsK*0.22 + aglM*0.12, 16, 44);
-      camera.position.set(heli.x + 3.5, Math.max(terY+1.8, renderY + 1.5), heli.z + dist);
-      camera.lookAt(heli.x + 3.5, Math.max(terY, renderY - 0.6), heli.z);
+      const fx = Math.cos(heli.yaw), fz = Math.sin(heli.yaw);
+      camera.position.set(heli.x + fx*3.5 - fz*dist, Math.max(terY+1.8, renderY + 1.5), heli.z + fz*3.5 + fx*dist);
+      camera.lookAt(heli.x + fx*3.5, Math.max(terY, renderY - 0.6), heli.z + fz*3.5);
     } else {
       const headYaw = clamp(camOrbitAz * 0.6, -0.85, 0.85);
       const headPitch = clamp((0.24 - camOrbitEl) * 0.7, -0.45, 0.45);
@@ -4997,7 +5089,7 @@ function stateVals(){
   };
 }
 
-mission=MISSIONS[1]; mission.world=MISSIONS[1].setup();
+mission=MISSIONS[1]; mission.world=applyOpenWorld(MISSIONS[1].setup());
 met={t:0,sumDx2:0,sumAe2:0,inBox:0,rpmLowT:0,td:null};
 rec={samples:[],events:[],acc:0};
 heli.done=true; gameState="menu";
