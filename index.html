@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>R22 Checkride Trainer 3D v18 — Física Real & Cenário Rico</title>
+<title>R22 Checkride Trainer 3D v19 — Física Real & Cenário Rico</title>
 <style>
 :root{
   --panel:#12161c; --panel2:#1a212b; --line:#2b3543;
@@ -237,7 +237,7 @@ body.startMode #colPad,body.startMode #cycPad,body.startMode #pedPad{display:non
 
 <div class="overlay" id="menu">
   <div class="card">
-    <h1>R22 Checkride Trainer 3D v18<small style="color:#35d17a">VERSÃO 18 · mapa novo: cidade, serra e mar · missões de rota livre</small><small>Física real · Cenário Rico & Referência de Altura · Robinson R22 Beta II</small></h1>
+    <h1>R22 Checkride Trainer 3D v19<small style="color:#35d17a">VERSÃO 19 · o nariz segue o vento relativo · o torque do motor pede pedal</small><small>Física real · Cenário Rico & Referência de Altura · Robinson R22 Beta II</small></h1>
     <p class="sub">Missões 00–06 são treinos de manobra na pista. Missões 07–12 acontecem no mundo aberto: cidade, serra, litoral e mar, com rota livre.</p>
     <div class="quickStartRow">
       <button class="act go" onclick="window._quickStart(1)">▶ DECOLAR AGORA (MISSÃO 01 — PAIRADO)</button>
@@ -314,7 +314,7 @@ body.startMode #colPad,body.startMode #cycPad,body.startMode #pedPad{display:non
     <p class="sub" id="sensorModalMsg" style="color:var(--ink);font-size:13px;line-height:1.5;"></p>
     <div class="poh" id="sensorModalFix" style="font-size:12px;color:var(--ink);background:rgba(53,209,122,.10);border-left-color:var(--green);margin:12px 0;"></div>
     <div style="background:#0d1117;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:var(--font-mono);font-size:11px;color:var(--cyan);word-break:break-all;user-select:all;-webkit-user-select:all;" id="fileUrlBox">
-      file:///sdcard/Download/R22_Checkride_Trainer_3D-v18.html
+      file:///sdcard/Download/R22_Checkride_Trainer_3D-v19.html
     </div>
     <div class="btnrow" style="margin-top:14px;">
       <button class="act go" id="btnCopyFileUrl" style="flex:1;">📋 COPIAR ENDEREÇO file:///</button>
@@ -335,6 +335,7 @@ const MASS=545, WEIGHT=MASS*G;
 const OMEGA100=53.4;
 const I_ROTOR=138, I_DRIVE=170;
 const P_MAX=88000;
+const Q_PEDAL_REF=P_MAX/(1.04*OMEGA100); // torque do motor a plena potência: referência para o esforço nos pedais
 const F_PLATE=0.52, F_VERT=1.45, KAPPA=1.13;
 const THETA_MIN=0.8*Math.PI/180, THETA_MAX=13.4*Math.PI/180;
 const SKID_Y=-1.32, CG_GROUND=1.32;
@@ -1550,8 +1551,12 @@ function physStep(dt){
   const wind=windOn?env.windBase+env.gust:0;
 
   const vax=h.vx-wind, vay=h.vy, vaz=h.vz;
-  const Vc=-vax*Math.sin(th)+vay*Math.cos(th);
-  const Vp=Math.hypot(vax*Math.cos(th)+vay*Math.sin(th), vaz);
+  // Vento relativo visto do helicóptero: uA = pela frente, vA = pelo lado direito (vale para qualquer proa)
+  const cY0=Math.cos(h.yaw), sY0=Math.sin(h.yaw);
+  const uA=vax*cY0+vaz*sY0, vA=-vax*sY0+vaz*cY0;
+  const Vh=Math.hypot(vax,vaz);
+  const Vc=-uA*Math.sin(th)+vay*Math.cos(th);
+  const Vp=Math.hypot(uA*Math.cos(th)+vay*Math.sin(th), vA);
   const omega=Math.max(h.rpm,20)/100*OMEGA100;
   const vtip=omega*ROTOR_R;
   const mu=Vp/vtip;
@@ -1642,24 +1647,34 @@ function physStep(dt){
   h.p-=h.p*0.35*dt;
   h.roll=clamp(h.roll+h.p*dt, d2r(-55), d2r(55));
 
+  // ---- Guinada (proa) ----
+  // A proa não tem mais "rumo de casa" (antes ela era puxada de volta para o rumo inicial da missão).
+  // Agora ela resulta de três coisas, como no helicóptero de verdade:
+  //  1) efeito cata-vento: a deriva e o rotor de cauda alinham o nariz com o VENTO RELATIVO (a velocidade em relação
+  //     ao ar, já contando o vento). Cresce com o quadrado da velocidade: quase nada no pairado, forte em cruzeiro.
+  //     De ré ou com vento de cauda o equilíbrio é instável: a cauda quer trocar de lugar com o nariz.
+  //  2) torque do motor: mais potência empurra o nariz para a DIREITA (rotor anti-horário visto de cima);
+  //     motor cortado, o nariz vai para a esquerda. O pedal fica neutro na potência de cruzeiro.
+  //  3) pedais.
+  const weathercock=1.15*vA*Math.min(Vh,46)/324;
   if(autoCoord){
-    const bankTurn = h.roll * clamp(h.vx/14, 0, 1.2) * 0.45;
-    h.r = lerp(h.r, bankTurn - h.yaw*2.2, clamp(6*dt,0,1));
-    if(h.onGround) h.r = 0;
-    h.yaw = clamp(h.yaw + h.r*dt, d2r(-45), d2r(45));
-    if(h.onGround) h.yaw = lerp(h.yaw, 0, clamp(8*dt,0,1));
+    // Pedais automáticos: o computador anula o torque, segura a proa no pairado e, com velocidade,
+    // deixa o nariz seguir o vento relativo e coordena a curva.
+    const kV=clamp((Vh-6)/8,0,1);
+    const turn=T*Math.sin(h.roll)/(Msk*Math.max(Vh,10));
+    h.r+=((turn+weathercock)*kV-h.r)*clamp(6*dt,0,1);
+    if(h.onGround) h.r=0;
   } else {
-    const torqueBias=engineOn?(collective-0.42)*0.55:-0.15;
-    const weathercock=- (h.yaw)*clamp(Vp/18,0,1.2);
+    const torqueBias=(Qeng/Q_PEDAL_REF-0.55)*0.8;
     const rTarget=pedal*1.6 + torqueBias + weathercock;
     h.r+=(rTarget-h.r)*clamp(6*dt,0,1);
     if(h.onGround) h.r*=0.2;
-    h.yaw+=h.r*dt;
   }
+  h.yaw+=h.r*dt;
 
-  const dragX=0.5*rho*F_PLATE*vax*Math.abs(vax);
+  const dragX=0.5*rho*F_PLATE*vax*Vh;
   const dragY=0.5*rho*F_VERT*vay*Math.abs(vay);
-  const dragZ=0.5*rho*F_PLATE*vaz*Math.abs(vaz);
+  const dragZ=0.5*rho*F_PLATE*vaz*Vh;
 
   const cosR=Math.cos(h.roll), sinR=Math.sin(h.roll);
   const cosY=Math.cos(h.yaw), sinY=Math.sin(h.yaw);
@@ -1672,7 +1687,7 @@ function physStep(dt){
   h.nz=lerp(h.nz, (T*Math.cos(th)*cosR)/Wt, clamp(10*dt,0,1));
 
   const pushover=cyclic<-0.45 && h.q<-0.45;
-  if(!h.onGround && h.nz<0.32 && pushover && Math.abs(h.vx)>12){ h.lowGt+=dt; } else h.lowGt=Math.max(0,h.lowGt-dt*2.5);
+  if(!h.onGround && h.nz<0.32 && pushover && Math.hypot(h.vx,h.vz)>12){ h.lowGt+=dt; } else h.lowGt=Math.max(0,h.lowGt-dt*2.5);
   if(h.lowGt>0.7 && !h.crashed){ crash("LOW-G / MAST BUMPING — pushover proibido (SFAR 73)"); }
 
   const qMax=1.55, resp=7.5;
@@ -1753,14 +1768,14 @@ function groundContact(dt,iasK){
     h.y=CG_GROUND+ter; h.vy=Math.max(0,h.vy);
     h.pitch=lerp(h.pitch,0,clamp(6*dt,0,1)); h.roll=lerp(h.roll,0,clamp(6*dt,0,1)); h.q=0; h.p=0;
     const fr=0.38*G;
-    if(Math.abs(h.vx)>0.15){ h.vx-=Math.sign(h.vx)*fr*dt; h.slid+=Math.abs(h.vx)*dt; }
-    else h.vx=0;
-    h.vz*=0.85;
+    const gsp=Math.hypot(h.vx,h.vz);
+    if(gsp>0.15){ const kf=Math.max(0,gsp-fr*dt)/gsp; h.vx*=kf; h.vz*=kf; h.slid+=gsp*dt; }
+    else { h.vx=0; h.vz=0; }
     if(h.nz>1.05 && collective>0.5){
       h.liftT=(h.liftT||0)+dt;
       if(h.liftT>0.22){ h.onGround=false; h.liftT=0; }
     } else h.liftT=0;
-    if(Math.abs(h.vx)<0.15 && met && met.td && !h.done && !h.crashed){
+    if(gsp<0.15 && met && met.td && !h.done && !h.crashed){
       finishTouch();
     }
     return;
