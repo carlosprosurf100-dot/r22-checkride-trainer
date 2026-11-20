@@ -116,12 +116,12 @@ table.res{width:100%;border-collapse:collapse;margin:10px 0 2px;font-size:13px;}
   <div class="brand">
     <div class="t1">TERRA</div><div class="t2">VERMELHA</div>
     <div class="t3">Piloto de fazenda · Robinson R22 · <span id="ver"></span></div>
-    <div class="t4">Chapada, cânion, pantanal e uma fazenda inteira para cuidar do alto. Nove trabalhos, rota sempre livre.</div>
+    <div class="t4">Chapada, cânion, pantanal, uma fazenda inteira para cuidar do alto e uma cidade no fim da estrada. Treze trabalhos, rota sempre livre.</div>
   </div>
   <div>
     <div id="cards" class="cards"></div>
     <div class="opts">
-      <button class="chip" id="oTilt">Giroscópio</button><button class="chip" id="oPed"></button><button class="chip" id="oGfx"></button><button class="chip" id="oSnd"></button>
+      <button class="chip" id="oTilt">Giroscópio</button><button class="chip" id="oPed"></button><button class="chip" id="oSim"></button><button class="chip" id="oGfx"></button><button class="chip" id="oSnd"></button>
       <span class="st" id="oStamps"></span>
     </div>
   </div>
@@ -137,7 +137,7 @@ table.res{width:100%;border-collapse:collapse;margin:10px 0 2px;font-size:13px;}
 <div id="pause" class="ov sheet-wrap"><div class="sheet">
   <div class="k">Pausa</div><h2 id="paName"></h2>
   <div class="row"><button class="btn go" id="paGo">CONTINUAR</button><button class="btn" id="paRestart">REINICIAR</button><button class="btn" id="paMenu">MENU</button></div>
-  <div class="row"><button class="btn" id="paMap">MAPA</button><button class="btn" id="paPed"></button><button class="btn" id="paGfx"></button><button class="btn" id="paSnd"></button><button class="btn" id="paEng">CORTAR MOTOR (TREINO)</button></div>
+  <div class="row"><button class="btn" id="paMap">MAPA</button><button class="btn" id="paPed"></button><button class="btn" id="paSim"></button><button class="btn" id="paGfx"></button><button class="btn" id="paSnd"></button><button class="btn" id="paEng">CORTAR MOTOR (TREINO)</button></div>
   <div class="keys" id="paKeys"></div>
 </div></div>
 
@@ -161,7 +161,7 @@ table.res{width:100%;border-collapse:collapse;margin:10px 0 2px;font-size:13px;}
    TERRA VERMELHA — piloto de fazenda no cerrado (Robinson R22)
    Núcleo: constantes da física, utilidades, ruído e estado global.
    ========================================================================= */
-const VERSION = "1.0";
+const VERSION = "1.1";
 
 // ---- Constantes físicas do R22 (as mesmas do Checkride Trainer) ----
 const KT = 0.514444, FT = 0.3048, MS2FPM = 196.85, G = 9.81, RHO = 1.225;
@@ -261,8 +261,8 @@ let camMode = 0;
 
 // ---- Progresso salvo no aparelho ----
 const SAVE_KEY = "terra_vermelha_v1";
-let save = { medals: {}, best: {}, stamps: {}, opt: { autoPedal: false, gfx: -1, sound: true } };
-try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); if (s) { save = Object.assign(save, s); save.opt = Object.assign({ autoPedal: false, gfx: -1, sound: true }, s.opt || {}); } } catch (_) { }
+let save = { medals: {}, best: {}, stamps: {}, opt: { autoPedal: false, gfx: -1, sound: true, sim: false } };
+try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); if (s) { save = Object.assign(save, s); save.opt = Object.assign({ autoPedal: false, gfx: -1, sound: true, sim: false }, s.opt || {}); } } catch (_) { }
 function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (_) { } }
 
 /* =========================================================================
@@ -465,6 +465,7 @@ function initInput() {
     if (k === "x") { cyclic = 0; cyclicLat = 0; pedal = 0; syncPads(); }
     if (k === " ") { doAction(); e.preventDefault(); }
     if (k === "m") { showMap = !showMap; }
+    if (k === "i") { save.opt.sim = !save.opt.sim; persist(); toast(save.opt.sim ? "Painel de simulador" : "Painel simples", "ok", 2); }
   });
   window.addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
 }
@@ -521,8 +522,17 @@ const BRIDGE = (() => { const n = nearLine(RIVER, 600, -40); return { x: n.qx, z
 // se o eixo da ponte aponta para o norte, inverte: "a" é o lado da fazenda (sul)
 if (BRIDGE.az < 0) { BRIDGE.ax = -BRIDGE.ax; BRIDGE.az = -BRIDGE.az; }
 
+// São Bento do Cerrado: a cidade no fim da estrada. Tem um sistema de coordenadas próprio, girado:
+// u corre ao longo da avenida principal (oeste -> leste), v atravessa (norte -> sul).
+const CITY = { x: 3850, z: -2050, rot: -0.2, HU: 384, HV: 288, P: 96, y: 6.0, name: "São Bento do Cerrado" };
+CITY.c = Math.cos(CITY.rot); CITY.s = Math.sin(CITY.rot);
+const cityW = (u, v) => [CITY.x + u * CITY.c - v * CITY.s, CITY.z + u * CITY.s + v * CITY.c];
+const cityL = (x, z) => { const dx = x - CITY.x, dz = z - CITY.z; return [dx * CITY.c + dz * CITY.s, -dx * CITY.s + dz * CITY.c]; };
+const inCity = (x, z, m) => { const p = cityL(x, z); return Math.abs(p[0]) < CITY.HU + (m || 8) && Math.abs(p[1]) < CITY.HV + (m || 8); };
+
 // Lugares do mapa. flat = raio aplainado; clear = raio sem árvores; h = altura fixa do chão (se houver)
 const SITES = {
+  cidade: { x: CITY.x, z: CITY.z, flat: 505, clear: 545, h: CITY.y },
   base: { x: -150, z: 1150, flat: 80, clear: 150, h: 7.5, pad: 8, name: "Fazenda Santa Fé" },
   sede: { x: -290, z: 1085, flat: 60, clear: 95, h: 7.5 },
   curral: { x: 40, z: 1290, flat: 90, clear: 150, h: 7.2 },
@@ -543,14 +553,17 @@ const ROADS = (() => {
   const b = BRIDGE, a0 = [b.x + b.ax * 75, b.z + b.az * 75], a1 = [b.x - b.ax * 75, b.z - b.az * 75];
   return {
     main: spline([[-150, 1200], [60, 1000], [330, 560], [a0[0] + b.ax * 150, a0[1] + b.az * 150], a0, a1, [a1[0] - b.ax * 150, a1[1] - b.az * 150],
-    [1000, -330], [1500, -200], [1900, 50], [2330, -260], [2600, -800], [2750, -1300], [3200, -1750], [4900, -2150]], 7),
+    [1000, -330], [1500, -200], [1900, 50], [2330, -260], [2600, -800], [2750, -1300], [3050, -1690], [3290, -1900], cityW(-CITY.HU - 6, 0)], 7),
     lodge: spline([[330, 560], [-200, 330], [-600, 130], [-750, 62]], 6),
-    farm: spline([[-150, 1200], [-250, 1400], [-300, 1545]], 4)
+    farm: spline([[-150, 1200], [-250, 1400], [-300, 1545]], 4),
+    east: spline([cityW(CITY.HU + 6, 0), [4640, -2235], [4990, -2330]], 5)
   };
 })();
 const SOLIDS = [];   // caixas sólidas (prédios, ponte, arco). Preenchido por quem monta as construções.
 function addSolid(o) {  // {x,z,hw,hd,rot,top,y0?,beam?,name}
-  const s = Object.assign({ rot: 0, y0: -99, beam: false, name: "construção" }, o); s.c = Math.cos(s.rot); s.s = Math.sin(s.rot); SOLIDS.push(s); return s;
+  const s = Object.assign({ rot: 0, y0: -99, beam: false, name: "construção" }, o); s.c = Math.cos(s.rot); s.s = Math.sin(s.rot);
+  s.br = Math.hypot(s.hw, s.hd) + 0.5;      // raio de descarte rápido (a cidade tem centenas de sólidos)
+  SOLIDS.push(s); return s;
 }
 
 function rasterLine(L, pad, dArr, sArr) {
@@ -636,8 +649,10 @@ function groundH(x, z, y) {
   let g = terrainRaw(x, z);
   for (let n = 0; n < SOLIDS.length; n++) {
     const s = SOLIDS[n]; if (s.top <= g) continue;
-    const dx = x - s.x, dz = z - s.z, u = dx * s.c + dz * s.s, v = -dx * s.s + dz * s.c;
-    if (Math.abs(u) <= s.hw && Math.abs(v) <= s.hd) { if (s.beam && y !== undefined && y < s.top - 0.9) continue; g = s.top; }
+    const dx = x - s.x, dz = z - s.z; if (dx > s.br || dx < -s.br || dz > s.br || dz < -s.br) continue;
+    const u = dx * s.c + dz * s.s, v = -dx * s.s + dz * s.c;
+    // quem pergunta de BAIXO do topo (ao lado de um prédio, sob uma viga) não "sobe" para o teto
+    if (Math.abs(u) <= s.hw && Math.abs(v) <= s.hd) { if (y !== undefined && y < s.top - (s.beam ? 0.9 : 1.6)) continue; g = s.top; }
   }
   return g;
 }
@@ -647,7 +662,8 @@ function isWater(x, z) { return terrainRaw(x, z) < waterLevel - 0.05; }
 function hitSolid(x, z, yLow, yHigh) {
   for (let n = 0; n < SOLIDS.length; n++) {
     const s = SOLIDS[n]; if (yLow >= s.top - 0.6) continue; if (s.beam && yHigh <= s.y0) continue;
-    const dx = x - s.x, dz = z - s.z, u = dx * s.c + dz * s.s, v = -dx * s.s + dz * s.c;
+    const dx = x - s.x, dz = z - s.z; if (dx > s.br || dx < -s.br || dz > s.br || dz < -s.br) continue;
+    const u = dx * s.c + dz * s.s, v = -dx * s.s + dz * s.c;
     if (Math.abs(u) <= s.hw + 0.3 && Math.abs(v) <= s.hd + 0.3) return s;
   }
   return null;
@@ -768,7 +784,7 @@ function buildWorld(cell, treeFrac) {
 
   // Árvores: [x, y, z, altura, raioDaCopa, tipo, r, g, b, giro]   tipo: 0 = folhosa, 1 = buriti (palmeira)
   const rng = mkRng(20260517), maxT = 16000, T = new Float32Array(maxT * 10); let nT = 0;
-  const step = 24, roads = [ROADS.main, ROADS.lodge, ROADS.farm];
+  const step = 24, roads = [ROADS.main, ROADS.lodge, ROADS.farm, ROADS.east];
   const GREENS = [lin(0x4f8a3c), lin(0x3f7634), lin(0x5f9a45), lin(0x6b8f3a), lin(0x356b33)];
   const IPES = [lin(0xf2c230), lin(0xe880b0), lin(0xb07ad8), lin(0xf4f1e6)];
   const CERR = [lin(0x7d9444), lin(0x8a8f40), lin(0x6c8a3d)];
@@ -1024,6 +1040,8 @@ function groundContact(dt) {
     if (terrainRaw(h.x + cY * rr, h.z + sY * rr) > ry || terrainRaw(h.x - sY * rr, h.z + cY * rr) > ry || terrainRaw(h.x + sY * rr, h.z - cY * rr) > ry || terrainRaw(h.x - cY * rr, h.z - sY * rr) > ry) {
       crash("O rotor bateu no paredão"); return;
     }
+    { const yl = ry - 0.25, yh = ry + 0.25, rs = hitSolid(h.x + cY * rr, h.z + sY * rr, yl, yh) || hitSolid(h.x - sY * rr, h.z + cY * rr, yl, yh) || hitSolid(h.x + sY * rr, h.z - cY * rr, yl, yh) || hitSolid(h.x - cY * rr, h.z - sY * rr, yl, yh);
+      if (rs) { crash("O rotor bateu em: " + rs.name); return; } }
     if (terTail > g.tail + 0.3) { crash("A cauda bateu no terreno"); return; }
   }
   if (wet && h.y + SKID_Y <= waterLevel + 0.12) { crash("Queda na água — os esquis tocaram a água"); return; }
@@ -1452,7 +1470,7 @@ function updateTufts(cx, cz) {
   for (let j = 0; j < n; j++) for (let i = 0; i < n; i++, q++) {
     const gi = bi + i - (n >> 1), gj = bj + j - (n >> 1), r1 = hash2(gi, gj), r2 = hash2(gi + 911, gj - 377), r3 = hash2(gi - 53, gj + 1291);
     const x = (gi + r1) * c, z = (gj + r2) * c, h = terrainRaw(x, z);
-    if (h < waterLevel + 0.4 || r3 < 0.25 || isClear(x, z) && r3 < 0.8 || gridSample(WORLD.rock, x, z) > 0.2) { d.position.set(0, -500, 0); d.scale.set(0.01, 0.01, 0.01); }
+    if (h < waterLevel + 0.4 || r3 < 0.25 || inCity(x, z, 14) || isClear(x, z) && r3 < 0.8 || gridSample(WORLD.rock, x, z) > 0.2) { d.position.set(0, -500, 0); d.scale.set(0.01, 0.01, 0.01); }
     else {
       const mound = false, s = 0.32 + r1 * 0.5, k = (0.5 + 0.5 * gridSample(shadeArr, x, z));
       d.position.set(x, h - 0.05, z); d.rotation.set(0, r2 * 6.28, 0); d.scale.set(s * (mound ? 0.9 : 1.2), s * (mound ? 1.3 : 1), s * (mound ? 0.9 : 1.2));
@@ -1591,7 +1609,11 @@ function updateCamera(dt) {
     const high = camMode === 2;
     const dist = high ? CAM.dist * 3.4 : CAM.dist, el = high ? Math.max(CAM.el, 0.95) : CAM.el;
     const az = CAM.yaw - CAM.az;
-    let px = h.x - Math.cos(az) * Math.cos(el) * dist, pz = h.z - Math.sin(az) * Math.cos(el) * dist, py = h.y + Math.sin(el) * dist + 1.2;
+    let px, pz, py, dd = dist;
+    for (let k = 0; k < 6; k++, dd *= 0.72) {   // se a câmera cairia dentro de um prédio, chega mais perto do helicóptero
+      px = h.x - Math.cos(az) * Math.cos(el) * dd; pz = h.z - Math.sin(az) * Math.cos(el) * dd; py = h.y + Math.sin(el) * dd + 1.2;
+      if (!hitSolid(px, pz, py - 0.8, py + 0.8)) break;
+    }
     py = Math.max(py, surfaceH(px, pz, py) + 1.6);
     camera.position.set(px + (Math.random() - 0.5) * sk * dist * 0.1, py + (Math.random() - 0.5) * sk * dist * 0.1, pz);
     camera.lookAt(h.x + Math.cos(h.yaw) * (high ? 6 : 2.5), h.y + (high ? -1 : 0.4), h.z + Math.sin(h.yaw) * (high ? 6 : 2.5));
@@ -1731,7 +1753,7 @@ function buildHeli() {
   const cone = new THREE.Mesh(new THREE.ConeGeometry(11, 38, 14, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff2c8, transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
   cone.position.set(16.2, -11.8, 0); cone.rotation.z = Math.atan2(30, 22); cone.visible = false; root.add(cone);
   body.castShadow = true; blades.castShadow = true;
-  Object.assign(HELI, { root, mr, tr, blades, disc, tdisc, strobe, spot, cone, glass, body });
+  Object.assign(HELI, { root, mr, tr, blades, disc, tdisc, strobe, spot, cone, glass, body, spotT: st, aim: null });
   heliRoot = root; scene.add(root);
   // corda e cargas (para carga externa, balde e guincho)
   const rg = new THREE.BufferGeometry(); rg.setAttribute("position", new THREE.BufferAttribute(new Float32Array(6), 3));
@@ -1757,6 +1779,14 @@ function updateHeliModel(dt) {
   HELI.strobe.visible = (tSim % 1.2) < 0.08;
   const on = GFX.night && engineOn;
   HELI.spot.intensity = on ? 420 : 0; HELI.cone.visible = on && camMode !== 1;
+  // farol: aponta para a frente e para baixo ou, na missão da polícia, segue o alvo sozinho
+  if (on) {
+    const want = new THREE.Vector3(30, -22, 0);
+    if (HELI.aim) { r.updateMatrixWorld(true); want.set(HELI.aim.x, HELI.aim.y, HELI.aim.z); r.worldToLocal(want); }
+    HELI.spotT.position.lerp(want, dt > 0 ? clamp(7 * dt, 0, 1) : 1);
+    const dir = HELI.spotT.position.clone().sub(HELI.spot.position).normalize();
+    HELI.cone.position.copy(HELI.spot.position).addScaledVector(dir, 19); HELI.cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.negate());
+  }
 }
 
 /* ---------------- construções ---------------- */
@@ -1933,7 +1963,7 @@ function buildProps() {
   scene.add(deco.mesh(MAT.flat2, false));
   nightGroup.add(new THREE.Mesh(ng.geo(), MAT.glow));
   bonfireLight = new THREE.PointLight(0xff8a3a, 0, 190, 1.6); const fp = SITES.vila.fire; bonfireLight.position.set(fp.x, fp.y + 2.5, fp.z); scene.add(bonfireLight);
-  buildWaterfall(); buildAnimalGeo();
+  buildWaterfall(); buildAnimalGeo(); buildCity();
 }
 
 /* ---------------- cachoeira, córrego e névoa ---------------- */
@@ -2027,6 +2057,370 @@ function buildAnimalGeo() {
     for (let i = 0; i < 6; i++) for (const s of [-1, 1]) g.box(-3.3 + i * 0.95, 0.95, s * 1.15, 0.12, 2.0, 0.1, wood); for (const s of [-1, 1]) for (const y of [1.5, 2.2, 2.9]) g.box(-0.9, y, s * 1.15, 5.4, 0.14, 0.08, wood);
     for (const x of [2.7, -1.9, -3.0]) for (const s of [-1, 1]) g.cyl(x, 0.3, s * 1.05, 0.5, 0.5, 0.4, 8, 0x1c1c1c, Math.PI / 2); GEO.truck = g.geo(); }
   { const g = new GB(); g.add(new THREE.ConeGeometry(0.5, 1, 5), [1, 1, 1], trs(0, 0.5, 0)); GEO.flame = g.geo(); }
+}
+
+/* =========================================================================
+   CIDADE — São Bento do Cerrado, no fim da estrada (nordeste do mapa).
+   Malha de 8 × 6 quadras, duas avenidas que se cruzam no centro, e os lugares das missões:
+   heliporto, Torre do Cerrado, banco, Hotel Ipê, TV, Santa Casa (heliponto na cobertura),
+   prédio em obras com grua, silos, caixa d'água, praça e estádio.
+   Tudo é desenhado em coordenadas da cidade (u ao longo da avenida, v atravessando) e cada
+   prédio se registra em SOLIDS, como as construções da fazenda.
+   ========================================================================= */
+const CT = { uL: [], vL: [], cars: null, carL: null, cd: [], fg: null, fug: null, pol: [], sock: null, nu: 9, nv: 7 };
+for (let k = -4; k <= 4; k++) CT.uL.push(k * CITY.P);     // ruas norte-sul (u constante)
+for (let k = -3; k <= 3; k++) CT.vL.push(k * CITY.P);     // ruas leste-oeste (v constante)
+const stW = q => q === 0 ? 20 : 11;                        // as duas avenidas passam pelo centro
+// r casas · m prédios · k comércio · s silos · o obra · T torre · B banco · h heliporto · P praça
+// H hotel e TV · S Santa Casa · c caixa d'água · p parque · E estádio (ocupa quatro quadras)
+const ZONE = ["rrrmmrcr", "rmmmmmrr", "smoTBmmr", "hkmPHSmr", "rrmmmmEE", "rrrrprEE"];
+// trecho de rua que não existe por causa do estádio. isU: rua de u constante = q, do v = a em diante
+const noStreet = (isU, q, a) => isU ? (q === 288 && a >= 96) : (q === 192 && a >= 192);
+
+function buildCity() {
+  const g = new GB(), dg = new GB(), mk = new GB(), tg = new GB(), ng = new GB(), ngr = new GB();
+  const gy = CITY.y + 0.10, rot = CITY.rot, rng = mkRng(8128), HU = CITY.HU, HV = CITY.HV, W = cityW, uL = CT.uL, vL = CT.vL;
+  const ASPH = lin(0x45474b), SIDE = lin(0xb9b2a4), CONC = lin(0xa7a297), LAWN = lin(0x7f9c50), PAVE = lin(0xcdbd9c), MARK = lin(0xe9e4d2), YEL = lin(0xe2b53a);
+  const NGR = lin(0x5a4629), LAMP = lin(0xffd9a0), GLASS = 0x8fb0c8;
+  const WON = [lin(0xffd98a), lin(0xffe7b0), lin(0xcfe4ff), lin(0xffc670)];
+  const TONES = [0xe9e2d0, 0xd9c7a8, 0xc9d3d8, 0xe6b98a, 0xb9c4b0, 0xf0ead8, 0xc7a98a, 0xa9b9c9, 0xd8b0a0];
+  const WALLS = [0xf2d48a, 0x9fd0e6, 0xf2a7a0, 0xbfe0a8, 0xf4efe2, 0xe8b47a, 0xcab8e6, 0xf0e2c0], ROOFS = [0xb5512f, 0xa8452c, 0xc0623a, 0x8f4a30];
+  const CARC = [0xf4f2ec, 0xc23b2b, 0x2f6f9a, 0x2a2c30, 0xb9bec4, 0xe2b53a, 0x3f8a4a, 0x8f959c];
+  const TG = [lin(0x4f8a3c), lin(0x3f7634), lin(0x6b8f3a)], IPE = [lin(0xf2c230), lin(0xe880b0), lin(0xb07ad8), lin(0xf4f1e6)];
+
+  const box = (u, yy, v, w, h, d, col, solid, r2) => { const p = W(u, v); B(g, p[0], yy, p[1], w, h, d, col, rot + (r2 || 0), solid); };
+  const quad = (G, u0, v0, u1, v1, yy, col) => { const a = W(u0, v0), b = W(u0, v1), c = W(u1, v1), d = W(u1, v0); G.quad([a[0], yy, a[1]], [b[0], yy, b[1]], [c[0], yy, c[1]], [d[0], yy, d[1]], col); };
+  const solid = (u, v, hw, hd, top, name, o) => { const p = W(u, v); return addSolid(Object.assign({ x: p[0], z: p[1], hw, hd, rot, top, name }, o || {})); };
+  const cyl = (u, yy, v, r1, r2, h, seg, col) => { const p = W(u, v); g.cyl(p[0], yy, p[1], r1, r2, h, seg, col); };
+  const lit = (u, yy, v, w, h, d, col, r2) => { const p = W(u, v); ng.box(p[0], yy, p[1], w, h, d, col, -(rot + (r2 || 0))); };
+  const bm = (a, b, th, col) => { const p = W(a[0], a[2]), q = W(b[0], b[2]); beam(g, [p[0], a[1], p[1]], [q[0], b[1], q[1]], th, col); };   // pontos [u, y, v]
+  const pad = (u, v, yy, size, tex) => { const p = W(u, v); return padMesh(p[0], yy, p[1], size, tex, -rot); };
+  const blink = (u, yy, v, r) => { const p = W(u, v), m = new THREE.Mesh(new THREE.IcosahedronGeometry(r || 0.7, 0), new THREE.MeshBasicMaterial({ color: 0xff2a1a, toneMapped: false })); m.position.set(p[0], yy, p[1]); scene.add(m); PROPS.blink.push(m); };
+  const site = (key, u, v, yy, padR, name) => { const p = W(u, v); SITES[key] = { x: p[0], z: p[1], y: yy, pad: padR, name, city: true, u, v }; return SITES[key]; };
+  const tree = (u, v, h, ipe) => { const p = W(u, v), c = ipe ? IPE[(rng() * 4) | 0] : TG[(rng() * 3) | 0]; tg.box(p[0], gy, p[1], 0.4, h * 0.5, 0.4, 0x5e4426); tg.ico(p[0], gy + h * 0.72, p[1], h * 0.36, h * 0.3, h * 0.36, c, 0, rng() * 3); };
+  const palm = (u, v, h) => { const p = W(u, v), c = lin(0x4f8a3c); tg.box(p[0], gy, p[1], 0.3, h, 0.3, 0x8a7a5a); for (let k = 0; k < 6; k++) { const a = k * 1.047 + 0.3; tg.tri([p[0], gy + h, p[1]], [p[0] + Math.cos(a) * 2.8, gy + h - 0.9, p[1] + Math.sin(a) * 2.8], [p[0] + Math.cos(a + 0.5) * 1.6, gy + h + 0.3, p[1] + Math.sin(a + 0.5) * 1.6], c); } };
+  const pcar = (u, v, r2) => { const c = CARC[(rng() * CARC.length) | 0]; box(u, gy + 0.25, v, 4.2, 0.8, 1.8, c, undefined, r2); box(u, gy + 1.05, v, 2.2, 0.6, 1.6, 0x2a3f55, undefined, r2); };
+  const texPad = kind => canvasTex(256, 256, (c, w) => {
+    c.clearRect(0, 0, w, w);
+    if (kind === "hosp") { c.fillStyle = "#e9ecee"; c.fillRect(6, 6, 244, 244); c.strokeStyle = "#d03a2e"; c.lineWidth = 10; c.beginPath(); c.arc(128, 128, 104, 0, 7); c.stroke(); c.fillStyle = "#d03a2e"; c.fillRect(100, 48, 56, 160); c.fillRect(48, 100, 160, 56); c.strokeStyle = "#fff"; c.lineWidth = 12; c.beginPath(); c.moveTo(108, 92); c.lineTo(108, 164); c.moveTo(148, 92); c.lineTo(148, 164); c.moveTo(108, 128); c.lineTo(148, 128); c.stroke(); }
+    else if (kind === "mosaic") { c.fillStyle = "#d9c9a6"; c.beginPath(); c.arc(128, 128, 124, 0, 7); c.fill(); for (let k = 0; k < 16; k++) { c.fillStyle = k % 2 ? "#b4683c" : "#f1e6c8"; c.beginPath(); c.moveTo(128, 128); c.arc(128, 128, 112, k * 0.3927, (k + 1) * 0.3927); c.closePath(); c.fill(); } c.fillStyle = "#d9c9a6"; c.beginPath(); c.arc(128, 128, 52, 0, 7); c.fill(); c.strokeStyle = "#7a5630"; c.lineWidth = 5; c.beginPath(); c.arc(128, 128, 114, 0, 7); c.stroke(); }
+    else { c.fillStyle = "#8f8d86"; c.fillRect(6, 6, 244, 244); c.strokeStyle = "#f2c230"; c.lineWidth = 9; c.beginPath(); c.arc(128, 128, 102, 0, 7); c.stroke(); c.strokeStyle = "#f6f1e4"; c.lineWidth = 17; c.beginPath(); c.moveTo(96, 78); c.lineTo(96, 178); c.moveTo(160, 78); c.lineTo(160, 178); c.moveTo(96, 128); c.lineTo(160, 128); c.stroke(); }
+  });
+  const PADT = { roof: texPad("roof"), hosp: texPad("hosp"), mosaic: texPad("mosaic") };
+
+  // o chão da cidade é uma laje única, 10 cm acima do terreno: pouso e desenho ficam na mesma altura
+  solid(0, 0, HU + 8, HV + 8, gy, "o chão da cidade");
+
+  // prédio: caixa + uma faixa de janelas por andar + janelas acesas à noite. Devolve a altura do topo.
+  function bld(u, v, w, d, y0, h, col, o) {
+    o = o || {}; const fl = o.fl || 3.3, n = Math.max(1, Math.floor((h - 0.8) / fl)), gc = o.glass || GLASS, bh = o.bandH || 1.5, yb = (fl - bh) * 0.62;
+    box(u, y0, v, w, h, d, col, o.name === null ? undefined : (o.name || "um prédio"));
+    for (let k = 0; k < n; k++) box(u, y0 + yb + k * fl, v, w + 0.16, bh, d + 0.16, gc);
+    const p = o.lit === undefined ? 0.34 : o.lit;
+    for (let k = 0; k < n; k++) {
+      const yy = y0 + yb + 0.12 + k * fl;
+      for (const [nu, nv, len, off] of [[0, -1, w, d / 2], [0, 1, w, d / 2], [-1, 0, d, w / 2], [1, 0, d, w / 2]]) {
+        const cols = Math.max(1, Math.floor(len / 3.6));
+        for (let c = 0; c < cols; c++) {
+          if (rng() > p) continue;
+          const t = (c + 0.5) / cols * len - len / 2, cu = u + nu * (off + 0.2) + (nu ? 0 : t), cv = v + nv * (off + 0.2) + (nv ? 0 : t), hu = nu ? 0 : 1.15, hv = nv ? 0 : 1.15;
+          const a = W(cu - hu, cv - hv), b = W(cu + hu, cv + hv), cc = WON[(rng() * 4) | 0];
+          ng.quad([a[0], yy, a[1]], [b[0], yy, b[1]], [b[0], yy + bh - 0.25, b[1]], [a[0], yy + bh - 0.25, a[1]], cc);
+        }
+      }
+    }
+    return y0 + h;
+  }
+  function house(u, v, w, d, r2, two) {
+    const h = two ? 6.2 : 3.2, p = W(u, v);
+    box(u, gy, v, w, h, d, WALLS[(rng() * WALLS.length) | 0], undefined, r2); g.roof(p[0], gy + h, p[1], w, d, 2.0, ROOFS[(rng() * 4) | 0], -(rot + r2), 0.5);
+    addSolid({ x: p[0], z: p[1], hw: w / 2, hd: d / 2, rot: rot + r2, top: gy + h + 1.1, name: "uma casa" });
+    for (const s of [-1, 1]) {
+      const wu = u + (r2 ? 0 : s * w * 0.25), wv = v + (r2 ? s * w * 0.25 : 0);
+      box(wu, gy + 1.1, wv, 1.3, 1.1, d + 0.14, GLASS, undefined, r2); if (rng() < 0.55) lit(wu, gy + 1.15, wv, 1.2, 0.95, d + 0.22, WON[(rng() * 4) | 0], r2);
+    }
+  }
+
+  // ---- ruas, canteiro das avenidas, faixas e postes ----
+  const street = (isU, q, a, b) => {
+    const w = stW(q) / 2;
+    if (isU) { quad(dg, q - w, a, q + w, b, gy, ASPH); quad(ngr, q - w, a, q + w, b, gy, NGR); } else { quad(dg, a, q - w, b, q + w, gy, ASPH); quad(ngr, a, q - w, b, q + w, gy, NGR); }
+    const P2 = (t, o) => isU ? [q + o, t] : [t, q + o];
+    if (q === 0) {   // avenida: canteiro central com palmeiras
+      const a2 = a + 16, b2 = b - 16, m = (a2 + b2) / 2, L = b2 - a2; if (L > 6) { if (isU) box(q, gy, m, 2.4, 0.3, L, 0x7f9c50); else box(m, gy, q, L, 0.3, 2.4, 0x7f9c50); for (let t = a2 + 8; t < b2 - 4; t += 16) { const p = P2(t, 0); palm(p[0], p[1], 7 + rng() * 2); } }
+      for (const o of [-5.2, 5.2]) for (let t = a + 12; t < b - 12; t += 13) { const p = P2(t, o), e = P2(t + 4.5, o); quad(mk, Math.min(p[0], e[0]) - (isU ? 0.16 : 0), Math.min(p[1], e[1]) - (isU ? 0 : 0.16), Math.max(p[0], e[0]) + (isU ? 0.16 : 0), Math.max(p[1], e[1]) + (isU ? 0 : 0.16), gy, MARK); }
+    } else for (let t = a + 12; t < b - 12; t += 13) { const p = P2(t, 0), e = P2(t + 4.5, 0); quad(mk, Math.min(p[0], e[0]) - (isU ? 0.16 : 0), Math.min(p[1], e[1]) - (isU ? 0 : 0.16), Math.max(p[0], e[0]) + (isU ? 0.16 : 0), Math.max(p[1], e[1]) + (isU ? 0 : 0.16), gy, YEL); }
+    for (let t = a + 24, k = 0; t < b - 20; t += 32, k++) { const p = P2(t, (k % 2 ? 1 : -1) * (w + 1.3)); bm([p[0], gy, p[1]], [p[0], gy + 7, p[1]], 0.16, 0x70706c); lit(p[0], gy + 6.8, p[1], 0.7, 0.4, 0.7, LAMP); }
+  };
+  for (const q of uL) for (let j = 0; j < vL.length - 1; j++) { if (noStreet(true, q, vL[j])) continue; street(true, q, vL[j] - (j === 0 ? 5.5 : 0), vL[j + 1] + (j === vL.length - 2 ? 5.5 : 0)); }
+  for (const q of vL) for (let i = 0; i < uL.length - 1; i++) { if (noStreet(false, q, uL[i])) continue; street(false, q, uL[i] - (i === 0 ? 5.5 : 0), uL[i + 1] + (i === uL.length - 2 ? 5.5 : 0)); }
+
+  // ---- as quadras ----
+  function res(b, onlySouth) {
+    const bw = b.u1 - b.u0;
+    for (const row of [0, 1]) {
+      if (row === 0 && onlySouth) continue;
+      for (let i = 0; i < 4; i++) {
+        const u = b.u0 + (i + 0.5) * bw / 4 + (rng() - 0.5) * 2, v = (row ? b.v1 - 10.5 : b.v0 + 10.5) + (rng() - 0.5) * 1.5;
+        if (rng() < 0.1) { tree(u, v, 5 + rng() * 3, rng() < 0.5); continue; }
+        house(u, v, 11 + rng() * 3, 8 + rng() * 2, 0, rng() < 0.16);
+      }
+    }
+    for (let i = 0; i < 4; i++) tree(b.u0 + 8 + rng() * (bw - 16), b.cv + (rng() - 0.5) * 14 + (onlySouth ? 10 : 0), 4 + rng() * 3, rng() < 0.35);
+  }
+  function mid(b) {
+    const central = Math.abs(b.bi - 3.5) <= 1.6 && Math.abs(b.bj - 2.5) <= 1.6, bw = b.u1 - b.u0, bh = b.v1 - b.v0;
+    for (const fu of [0.27, 0.73]) for (const fv of [0.27, 0.73]) {
+      const u = b.u0 + bw * fu, v = b.v0 + bh * fv;
+      if (rng() < 0.14) { for (let k = -1; k <= 1; k++) for (const s of [-1, 1]) if (rng() < 0.75) pcar(u + k * 5.4, v + s * 5, Math.PI / 2); continue; }
+      const w = 22 + rng() * 9, d = 20 + rng() * 9, fl = central ? 6 + ((rng() * 9) | 0) : 3 + ((rng() * 4) | 0);
+      const top = bld(u, v, w, d, gy, fl * 3.3 + 1, TONES[(rng() * TONES.length) | 0], { lit: 0.28 + rng() * 0.2 });
+      if (rng() < 0.7) { const su = rng() < 0.5 ? -1 : 1, sv = rng() < 0.5 ? -1 : 1; box(u + su * (w / 2 - 3.5), top, v + sv * (d / 2 - 3.5), 5, 2.8, 5, 0x8f8a80, "a casa de máquinas de um prédio"); cyl(u - su * (w / 2 - 3), top, v - sv * (d / 2 - 3), 1.3, 1.3, 2.2, 8, 0x4f8fc0); }
+    }
+  }
+  function com(b) {
+    const bw = b.u1 - b.u0, AWN = [0xc23b2b, 0x2f6f9a, 0xe2b53a];
+    for (let i = 0; i < 3; i++) { const u = b.u0 + (i + 0.5) * bw / 3, h = 5.5 + rng() * 3, w = bw / 3 - 5; box(u, gy, b.v0 + 16, w, h, 20, TONES[(rng() * TONES.length) | 0], "uma loja"); box(u, gy + 3.1, b.v0 + 5.2, w, 0.3, 1.8, AWN[i]); box(u, gy + 0.4, b.v0 + 5.95, w - 3, 2.4, 0.12, GLASS); lit(u, gy + 0.5, b.v0 + 5.9, w - 3.4, 2.2, 0.1, WON[1]); }
+    for (let k = 0; k < 9; k++) if (rng() < 0.7) pcar(b.u0 + 10 + k * 7, b.v1 - 22, Math.PI / 2);
+    for (let k = 0; k < 5; k++) tree(b.u0 + 10 + k * 15, b.v1 - 7, 5, true);
+  }
+  function torre(b) {
+    const u = b.cu + 4, v = b.cv + 4, nm = "a Torre do Cerrado";
+    bld(u, v, 48, 48, gy, 9.5, 0xd8d2c4, { name: nm, fl: 4.2, bandH: 2.6, lit: 0.7 });
+    bld(u, v, 32, 32, gy + 9.5, 90.5, 0xdfe7ea, { name: nm, glass: 0x7fb4da, bandH: 2.3, lit: 0.42 });
+    box(u, gy + 100, v, 24, 10, 24, 0xe9e6dc, nm); box(u, gy + 103, v, 24.2, 3.5, 24.2, 0x7fb4da); lit(u, gy + 103.2, v, 24.4, 3.1, 24.4, lin(0x9fd6ff));
+    pad(u, v, gy + 110, 16, PADT.roof); site("torre", u, v, gy + 110, 8, "Torre do Cerrado (cobertura)");
+    for (const [su, sv] of [[-1, -1], [1, 1]]) { bm([u + su * 15, gy + 100, v + sv * 15], [u + su * 15, gy + 106, v + sv * 15], 0.2, 0x70706c); blink(u + su * 15, gy + 106.5, v + sv * 15, 0.6); }
+    for (let k = 0; k < 5; k++) tree(b.u0 + 6, b.v0 + 8 + k * 15, 5, true);
+  }
+  function banco(b) {
+    bld(b.u0 + 20, b.v0 + 22, 28, 30, gy, 74, 0xcdbf9f, { name: "o Banco do Cerrado", lit: 0.4 }); box(b.u0 + 20, gy + 74, b.v0 + 22, 20, 5, 22, 0xb08a3c, "o Banco do Cerrado"); blink(b.u0 + 20, gy + 79.7, b.v0 + 22, 0.6);
+    bld(b.u1 - 19, b.v0 + 20, 26, 26, gy, 58, 0xcfe0d8, { glass: 0x7fc0a8, bandH: 2.2, lit: 0.4 });
+    bld(b.u1 - 21, b.v1 - 20, 28, 24, gy, 46, 0xd9c7a8, { lit: 0.36 });
+    const au = b.u0 + 21, av = b.v1 - 15;      // agência térrea com colunas: é daqui que o carro foge
+    box(au, gy, av, 30, 8.5, 20, 0xe9e2d0, "a agência do banco"); box(au, gy + 8.5, av, 32, 1.2, 22, 0xb08a3c);
+    for (let k = -2; k <= 2; k++) box(au + k * 6.5, gy, av + 10.6, 1.1, 8.5, 1.1, 0xf4efe2);
+    lit(au, gy + 1, av + 10.05, 22, 5, 0.1, WON[1]);
+    CT.bank = { u: au, v: av + 16 };
+  }
+  function hotel(b) {
+    const hu = b.u0 + 24, hv = b.v0 + 22;
+    const top = bld(hu, hv, 34, 26, gy, 58, 0xf0d9a8, { name: "o Hotel Ipê", glass: 0xb08c6c, bandH: 1.2, lit: 0.5 });
+    pad(hu - 6, hv, top, 15, PADT.roof); site("hotel", hu - 6, hv, top, 7.5, "Hotel Ipê (cobertura)");
+    box(hu + 13, top, hv, 6, 3, 8, 0x8f8a80, "a casa de máquinas do hotel");
+    box(hu, gy, hv + 24, 16, 0.25, 8, 0xd8d2c2); box(hu, gy + 0.2, hv + 24, 14.5, 0.1, 6.5, 0x3fc0cf);              // piscina
+    for (let k = 0; k < 4; k++) palm(hu - 12 + k * 8, hv + 31, 6);
+    const tu = b.u1 - 20, tv = b.v1 - 21, t2 = bld(tu, tv, 26, 26, gy, 38, 0xc9d3d8, { name: "o prédio da TV Chapada", lit: 0.45 });
+    const mu = tu + 6, mv = tv + 6, mh = 38, steel = 0xb9bec4;                                                        // torre de transmissão no terraço
+    for (const [a, c] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) bm([mu + a * 1.6, t2, mv + c * 1.6], [mu + a * 0.3, t2 + mh, mv + c * 0.3], 0.2, steel);
+    for (let k = 1; k < 7; k++) { const r = 1.6 - k * 0.19, yy = t2 + k * 5.4, P = [[-r, -r], [r, -r], [r, r], [-r, r]]; for (let q = 0; q < 4; q++) { const p0 = P[q], p1 = P[(q + 1) % 4]; bm([mu + p0[0], yy, mv + p0[1]], [mu + p1[0], yy, mv + p1[1]], 0.09, k % 2 ? 0xd9482e : steel); } }
+    solid(mu, mv, 1.9, 1.9, t2 + mh, "a antena da TV"); blink(mu, t2 + mh + 0.6, mv, 0.7);
+    cyl(tu - 7, t2, tv - 6, 0.3, 0.3, 2.4, 6, steel); { const p = W(tu - 7, tv - 6); g.cyl(p[0], t2 + 2.2, p[1], 2.0, 2.0, 0.4, 10, 0xe8e8e8, 0.9); }
+  }
+  function praca(b) {
+    // chão em nove pedaços: quatro canteiros nos cantos, cruz de calçamento e o centro livre para pouso
+    const a0 = b.u0 + 3, a3 = b.u1 - 3, c0 = b.v0 + 3, c3 = b.v1 - 3, w = (a3 - a0 - 24) / 2, a1 = a0 + w, a2 = a3 - w, c1 = c0 + w, c2 = c3 - w;
+    const U = [a0, a1, a2, a3], V = [c0, c1, c2, c3];
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) quad(dg, U[i], V[j], U[i + 1], V[j + 1], gy, (i !== 1 && j !== 1) ? LAWN : PAVE);
+    pad(b.cu, b.cv, gy, 22, PADT.mosaic); site("praca", b.cu, b.cv, gy, 10, "Praça da Matriz");
+    const ku = a0 + w / 2, kv = c0 + w / 2;                               // coreto
+    cyl(ku, gy, kv, 4.2, 4.2, 0.9, 8, 0xd8d2c4); for (let k = 0; k < 8; k++) { const a = k * 0.7854; bm([ku + Math.cos(a) * 3.7, gy + 0.9, kv + Math.sin(a) * 3.7], [ku + Math.cos(a) * 3.7, gy + 4, kv + Math.sin(a) * 3.7], 0.16, 0xf4efe2); }
+    cyl(ku, gy + 4, kv, 4.8, 0.3, 2.2, 8, 0xb5512f); solid(ku, kv, 4.3, 4.3, gy + 5.6, "o coreto da praça"); lit(ku, gy + 3.7, kv, 0.6, 0.3, 0.6, LAMP);
+    const ou = a3 - w / 2, ov = c3 - w / 2; cyl(ou, gy, ov, 1.6, 1.6, 1.2, 4, 0xa7a297); cyl(ou, gy + 1.2, ov, 1.0, 0.35, 10, 4, 0xe9e2d0); solid(ou, ov, 1.3, 1.3, gy + 11.2, "o obelisco da praça");
+    const fu = a3 - w / 2, fv = c0 + w / 2; cyl(fu, gy, fv, 5.2, 5.2, 0.7, 12, 0xb9b2a4); cyl(fu, gy + 0.62, fv, 4.6, 4.6, 0.12, 12, 0x4fa6c8); cyl(fu, gy, fv, 0.5, 0.3, 2.4, 6, 0xb9b2a4);
+    for (const [cu, cv] of [[ku, kv], [ou, ov], [fu, fv], [a0 + w / 2, c3 - w / 2]]) for (let k = 0; k < 4; k++) { const a = k * 1.571 + 0.6; tree(cu + Math.cos(a) * (w / 2 - 3), cv + Math.sin(a) * (w / 2 - 3), 5 + rng() * 2, true); }
+  }
+  function hospital(b) {
+    const u = b.cu, v = b.v0 + 22, nm = "a Santa Casa";
+    const top = bld(u, v, 60, 22, gy, 27, 0xf4f4f0, { name: nm, lit: 0.6 }); box(u, top - 2.2, v, 60.3, 1.3, 22.3, 0x2e9a6a);
+    pad(u - 15, v, top, 15, PADT.hosp); site("hospital", u - 15, v, top, 8, "Santa Casa (heliponto da cobertura)");
+    box(u + 24, top, v, 8, 4, 10, 0xdfe3e6, "a casa de máquinas da Santa Casa");
+    for (let k = 0; k < 8; k++) { const a = k * 0.7854; lit(u - 15 + Math.cos(a) * 8.6, top, v + Math.sin(a) * 8.6, 0.5, 0.3, 0.5, lin(0x52ff7a)); }
+    bld(u + 15, b.v0 + 55, 28, 34, gy, 12, 0xe9eef0, { name: "a ala da Santa Casa", lit: 0.6 });
+    box(u - 30.2, gy + 16, v, 0.3, 6, 1.8, 0xd03a2e); box(u - 30.2, gy + 18.1, v, 0.3, 1.8, 6, 0xd03a2e);            // cruz vermelha na empena
+    box(u - 16, gy, v + 15, 12, 0.3, 7, 0xd8d2c2); for (const s of [-1, 1]) box(u - 16 + s * 5.4, gy, v + 18, 0.3, 3.4, 0.3, 0xf4f4f0); box(u - 16, gy + 3.4, v + 15, 13, 0.3, 8, 0x2e9a6a);   // marquise da emergência
+    box(u - 26, gy + 0.3, v + 22, 5.2, 2.0, 2.1, 0xf4f4f0); box(u - 26, gy + 1.1, v + 22, 5.3, 0.4, 2.15, 0xd03a2e);   // ambulância
+    for (let k = 0; k < 4; k++) tree(b.u0 + 8, b.v0 + 42 + k * 10, 5, false);
+  }
+  function obra(b) {
+    const u = b.u1 - 22, v = b.v0 + 24, n = 13, fh = 3.4, top = gy + n * fh, grey = 0x8f8b82;
+    for (let k = 1; k <= n; k++) box(u, gy + k * fh - 0.4, v, 26, 0.4, 26, 0xa9a59b);
+    for (const [su, sv] of [[-1, -1], [1, -1], [1, 1], [-1, 1], [0, -1], [0, 1], [-1, 0], [1, 0]]) box(u + su * 12.4, gy, v + sv * 12.4, 0.8, n * fh - 0.4, 0.8, grey);
+    box(u, gy, v, 6, n * fh - 0.2, 6, grey);
+    for (const k of [n - 2, n - 1]) box(u, gy + k * fh + 0.1, v, 26.3, 1.1, 26.3, 0xe07a2a);                         // tela de proteção laranja
+    solid(u, v, 13, 13, top, "o prédio em obras"); site("obra", u, v, top, 8, "Topo do prédio em obras");
+    const cu = u - 24, cv = v, ch = 58, yel = 0xe2b53a;                                                                // grua
+    for (const [a, c] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) bm([cu + a * 1.1, gy, cv + c * 1.1], [cu + a * 1.1, gy + ch, cv + c * 1.1], 0.22, yel);
+    for (let k = 0; k < 9; k++) { const y0 = gy + k * 6.4, s = k % 2 ? 1 : -1; bm([cu - 1.1, y0, cv + s * 1.1], [cu + 1.1, y0 + 6.4, cv + s * 1.1], 0.12, yel); bm([cu + s * 1.1, y0, cv - 1.1], [cu + s * 1.1, y0 + 6.4, cv + 1.1], 0.12, yel); }
+    bm([cu, gy + ch, cv - 14], [cu, gy + ch, cv + 40], 1.0, yel); bm([cu, gy + ch + 7, cv], [cu, gy + ch + 0.5, cv + 38], 0.16, 0x3a3530); bm([cu, gy + ch + 7, cv], [cu, gy + ch + 0.5, cv - 13], 0.16, 0x3a3530);
+    bm([cu, gy + ch, cv], [cu, gy + ch + 7, cv], 0.5, yel); box(cu, gy + ch - 2.6, cv - 12, 2.2, 2.4, 3.6, 0x70706c); box(cu + 1.6, gy + ch - 2.8, cv + 1.2, 1.8, 2.4, 2.0, 0xf4efe2);
+    solid(cu, cv, 1.5, 1.5, gy + ch + 7, "a grua"); solid(cu, cv + 13, 1.2, 27.5, gy + ch + 1.2, "a lança da grua", { y0: gy + ch - 3.2, beam: true }); blink(cu, gy + ch + 7.6, cv, 0.6);
+    const CN = [0xc23b2b, 0x2f6f9a, 0x3f8a4a, 0xe2b53a];                                                               // canteiro: contêineres, areia, betoneira
+    for (let k = 0; k < 4; k++) box(b.u0 + 14 + (k % 2) * 7, gy, b.v1 - 14 - ((k / 2) | 0) * 3.2, 6.1, 2.6, 2.5, CN[k]);
+    { const p = W(b.u0 + 36, b.v1 - 16); g.ico(p[0], gy + 0.4, p[1], 5, 1.8, 4, 0xd9c79a, 1); }
+    box(b.u0 + 52, gy + 0.4, b.v1 - 13, 6.5, 1.3, 2.4, 0xe2b53a); cyl(b.u0 + 51, gy + 1.7, b.v1 - 13, 1.3, 1.0, 2.2, 8, 0xd8d2c4);
+  }
+  function silos(b) {
+    for (let i = 0; i < 4; i++) { const u = b.u0 + 13 + i * 15.5, v = b.v0 + 15; cyl(u, gy, v, 7, 7, 21, 12, 0xc9ced3); cyl(u, gy + 21, v, 7, 1.2, 4, 12, 0xaab0b6); solid(u, v, 6.6, 6.6, gy + 23, "um silo"); }
+    const tu = b.u0 + 72, tv = b.v0 + 15; box(tu, gy, tv, 5, 33, 5, 0xb9bec4, "o elevador de grãos"); bm([tu, gy + 31, tv], [b.u0 + 13, gy + 25.6, tv], 0.8, 0x9aa0a6); blink(tu, gy + 33.6, tv, 0.5);
+    const wu = b.cu, wv = b.v1 - 20, p = W(wu, wv); box(wu, gy, wv, 56, 7.5, 24, 0xb9b4a8); g.roof(p[0], gy + 7.5, p[1], 56, 24, 4, 0x8f959c, -rot, 0.6); solid(wu, wv, 28, 12, gy + 9.6, "o armazém");
+    for (const k of [0, 1]) { box(b.u0 + 20 + k * 22, gy + 0.5, b.v0 + 38, 9, 2.8, 2.5, 0xd8d2c4); box(b.u0 + 26.2 + k * 22, gy + 0.5, b.v0 + 38, 2.4, 2.4, 2.4, k ? 0x2f6f9a : 0xc23b2b); }
+  }
+  function caixa(b) {
+    const u = b.cu, v = b.v0 + 22;
+    cyl(u, gy, v, 2.2, 2.0, 26, 10, 0xd9dde0); cyl(u, gy + 26, v, 2.0, 7.5, 5, 12, 0xd9dde0); cyl(u, gy + 31, v, 7.5, 7.5, 3.2, 12, 0x4f8fc0); cyl(u, gy + 34.2, v, 7.5, 1, 1.6, 12, 0xd9dde0);
+    solid(u, v, 2.3, 2.3, gy + 26.5, "a caixa d'água da cidade"); solid(u, v, 7.3, 7.3, gy + 35.5, "a caixa d'água da cidade", { y0: gy + 26, beam: true }); blink(u, gy + 36.4, v, 0.5);
+    res(b, true);
+  }
+  function heliporto(b) {
+    const pu = b.cu + 10, pv = b.cv;
+    pad(pu, pv, gy, 17, PADT.roof); site("heliporto", pu, pv, gy, 8, "Heliporto de São Bento");
+    const hu = b.u0 + 15, hv = b.cv, p = W(hu, hv); box(hu, gy, hv, 18, 6, 26, 0xd9d4c6); g.roof(p[0], gy + 6, p[1], 26, 18, 2.6, 0x3a78b0, -(rot + Math.PI / 2), 0.6); solid(hu, hv, 9, 13, gy + 7.4, "o hangar do heliporto");
+    box(hu + 9.06, gy, hv, 0.1, 5, 16, 0x39424d); lit(hu + 9.2, gy + 5.3, hv, 0.3, 0.3, 0.3, LAMP);
+    box(pu + 12, gy, b.v1 - 9, 14, 4, 8, 0xf4efe2, "o terminal do heliporto"); box(pu + 12, gy + 4, b.v1 - 9, 15, 0.3, 9, 0x3a78b0); box(pu + 12, gy + 1.2, b.v1 - 13.05, 9, 1.6, 0.1, GLASS); lit(pu + 12, gy + 1.3, b.v1 - 13.1, 8.6, 1.4, 0.1, WON[2]);
+    cyl(b.u1 - 9, gy, b.v1 - 10, 1.6, 1.6, 4.2, 10, 0xc23b2b);                                                         // tanque de combustível
+    for (let k = 0; k < 8; k++) { const a = k * 0.7854 + 0.39; lit(pu + Math.cos(a) * 9.6, gy, pv + Math.sin(a) * 9.6, 0.5, 0.3, 0.5, lin(0x52ff7a)); }
+    const su = b.u1 - 8, sv = b.v0 + 8, sp = W(su, sv); cyl(su, gy, sv, 0.08, 0.06, 6, 5, 0xdddddd);                   // biruta
+    const sg = new GB(); sg.add(new THREE.CylinderGeometry(0.16, 0.42, 2.6, 7, 1, true), 0xf07a22, trs(1.3, 0, 0, 0, 1, 1, 1, 0, -Math.PI / 2)); sg.box(0.9, -0.2, 0, 0.5, 0.42, 0.01, 0xffffff);
+    CT.sock = sg.mesh(MAT.flat2); CT.sock.position.set(sp[0], gy + 5.9, sp[1]); scene.add(CT.sock);
+    CT.load1 = W(pu - 2, pv - 26); CT.load2 = W(pu + 16, pv - 26);
+  }
+  function estadio(b) {
+    const cu = b.cu, cv = b.cv, SEAT = [0xc23b2b, 0xf2f0e8, 0x2e7d4f];
+    for (let i = 0; i < 3; i++) { const h = 4 + i * 4.5; for (const s of [-1, 1]) { box(cu, gy, cv + s * (43 + i * 6), 108, h, 6, SEAT[i], "a arquibancada"); box(cu + s * (61 + i * 6), gy, cv, 6, h, 2 * (46 + i * 6), SEAT[i], "a arquibancada"); } }
+    for (const s of [-1, 1]) { box(cu, gy, cv + s * 58.4, 108, 14.2, 0.7, 0xd8d2c4); box(cu + s * 76.4, gy, cv, 0.7, 14.2, 116, 0xd8d2c4); }
+    const p = W(cu, cv), tex = canvasTex(512, 320, (c) => { c.fillStyle = "#4f9442"; c.fillRect(0, 0, 512, 320); for (let k = 0; k < 8; k += 2) { c.fillStyle = "#5aa04a"; c.fillRect(16 + k * 60, 10, 60, 300); } c.strokeStyle = "#f2f4ea"; c.lineWidth = 3; c.strokeRect(16, 10, 480, 300); c.beginPath(); c.moveTo(256, 10); c.lineTo(256, 310); c.stroke(); c.beginPath(); c.arc(256, 160, 44, 0, 7); c.stroke(); c.strokeRect(16, 82, 78, 156); c.strokeRect(418, 82, 78, 156); c.strokeRect(16, 124, 26, 72); c.strokeRect(470, 124, 26, 72); });
+    const pm = new THREE.Mesh(new THREE.PlaneGeometry(106, 66), new THREE.MeshLambertMaterial({ map: tex, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -10 }));
+    pm.rotation.x = -Math.PI / 2; pm.rotation.z = -rot; pm.position.set(p[0], gy + 0.03, p[1]); pm.receiveShadow = true; pm.renderOrder = 1; scene.add(pm);
+    quad(ngr, cu - 53, cv - 33, cu + 53, cv + 33, gy, lin(0x3f8a3a));
+    for (const e of [-1, 1]) { const gx = cu + e * 50; bm([gx, gy, cv - 3.6], [gx, gy + 2.4, cv - 3.6], 0.14, 0xffffff); bm([gx, gy, cv + 3.6], [gx, gy + 2.4, cv + 3.6], 0.14, 0xffffff); bm([gx, gy + 2.4, cv - 3.6], [gx, gy + 2.4, cv + 3.6], 0.14, 0xffffff); }
+    for (const su of [-1, 1]) for (const sv of [-1, 1]) { const fu = cu + su * 72, fv = cv + sv * 66; bm([fu, gy, fv], [fu, gy + 31, fv], 0.7, 0x9aa0a6); box(fu, gy + 30, fv, 5, 3, 0.8, 0xd8d2c4, undefined, su * sv > 0 ? -0.75 : 0.75); lit(fu, gy + 30.2, fv, 4.6, 2.6, 1.0, lin(0xfff6dc), su * sv > 0 ? -0.75 : 0.75); solid(fu, fv, 1.6, 1.6, gy + 33.4, "um refletor do estádio"); }
+    site("estadio", cu, cv, gy, 12, "Estádio Municipal");
+    for (let k = 0; k < 10; k++) { if (rng() < 0.7) pcar(b.u0 + 12 + k * 6.2, b.v0 + 12, Math.PI / 2); if (rng() < 0.6) pcar(b.u0 + 12 + k * 6.2, b.v1 - 12, Math.PI / 2); }
+  }
+  function parque(b) {
+    const u = b.cu - 8, v = b.cv + 4; cyl(u, gy, v, 13, 13, 0.12, 14, 0x3fa7c4); cyl(u, gy, v, 14.2, 14.2, 0.06, 14, 0xc9b47f);
+    for (let k = 0; k < 20; k++) { const tu = b.u0 + 6 + rng() * (b.u1 - b.u0 - 12), tv = b.v0 + 6 + rng() * (b.v1 - b.v0 - 12); if (Math.hypot(tu - u, tv - v) < 17) continue; tree(tu, tv, 5 + rng() * 4, rng() < 0.45); }
+  }
+
+  for (let bj = 0; bj < 6; bj++) for (let bi = 0; bi < 8; bi++) {
+    const z = ZONE[bj][bi]; if (z === "E" && !(bi === 6 && bj === 4)) continue;
+    let u0 = uL[bi] + stW(uL[bi]) / 2, u1 = uL[bi + 1] - stW(uL[bi + 1]) / 2, v0 = vL[bj] + stW(vL[bj]) / 2, v1 = vL[bj + 1] - stW(vL[bj + 1]) / 2;
+    if (z === "E") { u1 = uL[8] - 5.5; v1 = vL[6] - 5.5; }
+    const b = { bi, bj, z, u0, u1, v0, v1, cu: (u0 + u1) / 2, cv: (v0 + v1) / 2 };
+    // calçada em volta e o miolo da quadra
+    quad(dg, u0, v0, u1, v0 + 3, gy, SIDE); quad(dg, u0, v1 - 3, u1, v1, gy, SIDE); quad(dg, u0, v0 + 3, u0 + 3, v1 - 3, gy, SIDE); quad(dg, u1 - 3, v0 + 3, u1, v1 - 3, gy, SIDE);
+    if (z !== "P") quad(dg, u0 + 3, v0 + 3, u1 - 3, v1 - 3, gy, (z === "r" || z === "p" || z === "c") ? LAWN : CONC);
+    if (z === "r") res(b); else if (z === "m") mid(b); else if (z === "k") com(b); else if (z === "T") torre(b); else if (z === "B") banco(b); else if (z === "H") hotel(b);
+    else if (z === "P") praca(b); else if (z === "S") hospital(b); else if (z === "o") obra(b); else if (z === "s") silos(b); else if (z === "c") caixa(b); else if (z === "h") heliporto(b);
+    else if (z === "E") estadio(b); else if (z === "p") parque(b);
+  }
+
+  // ---- malhas ----
+  const main = g.mesh(MAT.flat); main.receiveShadow = true; scene.add(main);
+  const gm = dg.mesh(MAT.decal, false); gm.receiveShadow = true; gm.renderOrder = 1; scene.add(gm);
+  const mm = mk.mesh(new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -14 }), false); mm.renderOrder = 2; scene.add(mm);
+  scene.add(tg.mesh(MAT.flat2));
+  nightGroup.add(new THREE.Mesh(ng.geo(), new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false, side: THREE.DoubleSide })));
+  const ngm = new THREE.Mesh(ngr.geo(), new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -18 })); ngm.renderOrder = 3; nightGroup.add(ngm);
+
+  // ---- carro (trânsito, fugitivo e viaturas) e cargas da cidade ----
+  { const c = new GB(); c.box(0, 0.25, 0, 4.2, 0.8, 1.8, [1, 1, 1]); c.box(-0.2, 1.05, 0, 2.2, 0.6, 1.6, 0x2a3f55); GEO.car = c.geo();
+    const l = new GB(); for (const s of [-1, 1]) { l.box(2.1, 0.55, s * 0.6, 0.12, 0.26, 0.4, lin(0xfff6d8)); l.box(-2.1, 0.6, s * 0.6, 0.1, 0.2, 0.36, lin(0xff3a2a)); } GEO.carL = l.geo(); }
+  { const a = new GB(); a.box(0, -0.5, 0, 1.3, 0.95, 0.95, 0xe9ecee); a.cyl(0, 0.45, 0, 0.36, 0.36, 0.06, 10, 0x3a3f45); a.box(0, -0.52, 0.48, 1.1, 0.7, 0.03, 0x9aa0a6);
+    for (const [x, z] of [[0.6, 0.42], [-0.6, -0.42], [-0.6, 0.42], [0.6, -0.42]]) beam(a, [x, 0.45, z], [0, 1.0, 0], 0.03, 0x2b2118);
+    const m = a.mesh(MAT.flat2); m.visible = false; scene.add(m); HELI.loads.ac = m; }
+}
+
+// ruas da cidade no mapa (minimapa e mapa inteiro)
+function cityDrawMap(c, X) {
+  c.strokeStyle = "rgba(70,72,76,.95)";
+  const seg = (a, b, w) => { c.lineWidth = w; c.beginPath(); c.moveTo(X(a[0]), X(a[1])); c.lineTo(X(b[0]), X(b[1])); c.stroke(); };
+  for (const q of CT.uL) for (let j = 0; j < CT.vL.length - 1; j++) if (!noStreet(true, q, CT.vL[j])) seg(cityW(q, CT.vL[j]), cityW(q, CT.vL[j + 1]), q === 0 ? 0.9 : 0.5);
+  for (const q of CT.vL) for (let i = 0; i < CT.uL.length - 1; i++) if (!noStreet(false, q, CT.uL[i])) seg(cityW(CT.uL[i], q), cityW(CT.uL[i + 1], q), q === 0 ? 0.9 : 0.5);
+}
+
+/* ---------------- trânsito ---------------- */
+function citySetup() {
+  const NC = GFX.phone ? 26 : 44, rng = mkRng(77), col = new THREE.Color(), CC = [0xf4f2ec, 0xc23b2b, 0x2f6f9a, 0x4a4c52, 0xb9bec4, 0xe2b53a, 0x3f8a4a, 0x8f959c];
+  CT.cars = new THREE.InstancedMesh(GEO.car, MAT.flat, NC); CT.cars.frustumCulled = false; CT.cars.castShadow = true; scene.add(CT.cars);
+  CT.carL = new THREE.InstancedMesh(GEO.carL, MAT.glow, NC); CT.carL.frustumCulled = false; CT.carL.visible = false; scene.add(CT.carL);
+  const uOk = CT.uL.filter(q => q !== 288), vOk = CT.vL.filter(q => q !== 192);
+  for (let i = 0; i < NC; i++) {
+    const isU = rng() < 0.45, q = isU ? uOk[(rng() * uOk.length) | 0] : vOk[(rng() * vOk.length) | 0], half = isU ? CITY.HV : CITY.HU;
+    CT.cd.push({ isU, q, s: (rng() * 2 - 1) * half, dir: rng() < 0.5 ? -1 : 1, v0: 8 + rng() * 6, sp: 10, lane: q === 0 ? 5.6 : 2.7 }); CT.cars.setColorAt(i, col.setHex(CC[(rng() * CC.length) | 0]));
+  }
+  CT.dummy = new THREE.Object3D();
+  // o carro do fugitivo (prata) e duas viaturas, usados só na missão da polícia
+  const mkCar = hex => { const grp = new THREE.Group(), m = new THREE.Mesh(GEO.car, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, color: hex })); m.castShadow = true; grp.add(m); grp.add(new THREE.Mesh(GEO.carL, MAT.glow)); grp.visible = false; scene.add(grp); return grp; };
+  CT.fug = mkCar(0xdfe3e6);
+  for (let k = 0; k < 2; k++) { const p = mkCar(0x26364f); const bar = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.22, 1.2), new THREE.MeshBasicMaterial({ color: 0xff2a1a, toneMapped: false })); bar.position.set(-0.2, 1.78, 0); p.add(bar); p.userData.bar = bar; CT.pol.push(p); }
+}
+function cityUpdate(dt) {
+  if (!CT.cars) return;
+  const cam = camera.position, far = Math.hypot(cam.x - CITY.x, cam.z - CITY.z) > 4300;
+  CT.cars.visible = !far; CT.carL.visible = !far && GFX.night;
+  if (CT.sock && env) { const w = windVec(), sp = Math.hypot(w.x, w.z); CT.sock.rotation.y = -Math.atan2(w.z, w.x); CT.sock.rotation.z = -clamp(1.2 - sp * 0.16, 0.08, 1.2) + Math.sin(performance.now() / 300) * 0.05; }
+  for (const p of CT.pol) if (p.visible) p.userData.bar.material.color.setHex((performance.now() % 500) < 250 ? 0xff2a1a : 0x2a6aff);
+  if (far) return;
+  const d = CT.dummy, low = heli && !heli.done && gameState === "flying" && heli.y - CITY.y < 16, hx = heli ? heli.x : 0, hz = heli ? heli.z : 0, y = CITY.y + 0.1;
+  for (let i = 0; i < CT.cd.length; i++) {
+    const c = CT.cd[i], half = c.isU ? CITY.HV : CITY.HU, p = c.isU ? cityW(c.q - c.lane * c.dir, c.s) : cityW(c.s, c.q + c.lane * c.dir);
+    const tgt = low && Math.hypot(p[0] - hx, p[1] - hz) < 30 ? 0 : c.v0;        // o trânsito para quando o helicóptero desce na rua
+    c.sp += clamp(tgt - c.sp, -10 * dt, 4 * dt); c.s += c.dir * c.sp * dt; if (Math.abs(c.s) > half) { c.s = Math.sign(c.s) * half; c.dir = -c.dir; }
+    d.position.set(p[0], y, p[1]); d.rotation.set(0, -(c.isU ? CITY.rot + c.dir * Math.PI / 2 : CITY.rot + (c.dir > 0 ? 0 : Math.PI)), 0); d.updateMatrix(); CT.cars.setMatrixAt(i, d.matrix); CT.carL.setMatrixAt(i, d.matrix);
+  }
+  CT.cars.instanceMatrix.needsUpdate = true; CT.carL.instanceMatrix.needsUpdate = true;
+}
+function cityReset() { if (CT.fug) CT.fug.visible = false; for (const p of CT.pol) p.visible = false; CT.fg = null; if (HELI) HELI.aim = null; }
+
+/* ---------------- o carro que foge (missão da polícia) ----------------
+   Anda de esquina em esquina pela malha; nunca dá meia-volta. Quando "exit" liga, procura a saída
+   oeste e pega a estrada da vila. */
+function fugEdgeOk(iu, jv, du, dv) {
+  const i2 = iu + du, j2 = jv + dv; if (i2 < 0 || j2 < 0 || i2 >= CT.nu || j2 >= CT.nv) return false;
+  if (du === 0) return !noStreet(true, CT.uL[iu], Math.min(CT.vL[jv], CT.vL[j2]));
+  return !noStreet(false, CT.vL[jv], Math.min(CT.uL[iu], CT.uL[i2]));
+}
+function fugInit(iu, jv, du, dv) {
+  const p = cityW(CT.uL[iu], CT.vL[jv]);
+  CT.fg = { iu, jv, du, dv, t: 0, sp: 0, x: p[0], z: p[1], hd: CITY.rot, vx: 0, vz: 0, mode: "city", s: 0, exit: false, stop: true, rng: mkRng(1 + ((Math.random() * 1e6) | 0)) };
+  CT.fug.visible = true; fugStep(0);
+}
+function fugStep(dt) {
+  const f = CT.fg; if (!f) return;
+  let tx, tz, th, vmax;
+  if (f.mode === "city") {
+    const lane = (q => q === 0 ? 5.6 : 2.7)(f.du ? CT.vL[f.jv] : CT.uL[f.iu]);
+    vmax = f.stop ? 0 : (f.t > 0.80 || f.t < 0.12 ? 8.5 : 15);
+    f.sp += clamp(vmax - f.sp, -14 * dt, 5 * dt); f.t += f.sp * dt / CITY.P;
+    if (f.t >= 1) {
+      f.t -= 1; f.iu += f.du; f.jv += f.dv;
+      if (f.exit && f.iu === 0 && f.jv === 3 && f.du === -1) { f.mode = "road"; f.s = ROADS.main[ROADS.main.length - 1][2]; }
+      else {
+        const opts = [[f.du, f.dv], [f.dv, f.du], [-f.dv, -f.du]].filter(o => fugEdgeOk(f.iu, f.jv, o[0], o[1]));
+        let pick = null;
+        if (f.exit) { // rumo à saída oeste: primeiro acerta a avenida (v = 0), depois vai para oeste
+          const want = f.jv !== 3 ? [0, f.jv < 3 ? 1 : -1] : [-1, 0]; pick = opts.find(o => o[0] === want[0] && o[1] === want[1]) || opts.find(o => o[0] === -1) || null;
+        }
+        if (!pick) { const st = opts.find(o => o[0] === f.du && o[1] === f.dv); pick = (st && f.rng() < 0.45) ? st : opts[(f.rng() * opts.length) | 0]; }
+        if (!pick) pick = [-f.du, -f.dv];
+        f.du = pick[0]; f.dv = pick[1];
+      }
+    }
+    if (f.mode === "city") {
+      const u = CT.uL[f.iu] + f.du * f.t * CITY.P + (f.dv ? -lane * f.dv : 0), v = CT.vL[f.jv] + f.dv * f.t * CITY.P + (f.du ? lane * f.du : 0), p = cityW(u, v);
+      tx = p[0]; tz = p[1]; th = CITY.rot + (f.du ? (f.du > 0 ? 0 : Math.PI) : f.dv * Math.PI / 2);
+    }
+  }
+  if (f.mode === "road") {
+    vmax = f.stop ? 0 : 23; f.sp += clamp(vmax - f.sp, -16 * dt, 4 * dt); f.s -= f.sp * dt;
+    const a = alongLine(ROADS.main, f.s); tx = a.x + a.tz * 1.8; tz = a.z - a.tx * 1.8; th = Math.atan2(-a.tz, -a.tx);
+  }
+  const k = dt > 0 ? clamp(7 * dt, 0, 1) : 1, ox = f.x, oz = f.z;
+  f.x += (tx - f.x) * k; f.z += (tz - f.z) * k; f.hd += wrapPi(th - f.hd) * k;
+  if (dt > 0) { f.vx = (f.x - ox) / dt; f.vz = (f.z - oz) / dt; }
+  CT.fug.position.set(f.x, groundH(f.x, f.z, CITY.y + 3) + (f.mode === "road" ? 0.1 : 0), f.z); CT.fug.rotation.y = -f.hd;
 }
 
 /* =========================================================================
@@ -2296,7 +2690,7 @@ function washUpdate(dt) {
   for (let i = 0; i < cnt; i++) {
     const a = Math.random() * 6.283, r = 3.5 + Math.random() * 4, ca = Math.cos(a), sa = Math.sin(a), sp = 6 + 8 * k;
     if (wat) emit({ x: h.x + ca * r, y: sur + 0.2, z: h.z + sa * r, vx: ca * sp, vy: 1.5 + Math.random() * 2, vz: sa * sp, life: 1.1, size: 0.8, grow: 1.5, grav: 6, drag: 1.2, r: 0.92, g: 0.96, b: 1, a: 0.5 * k });
-    else { const c = terrainRaw(h.x, h.z) > 60 ? [0.72, 0.5, 0.36] : [0.78, 0.66, 0.48]; emit({ x: h.x + ca * r, y: sur + 0.3, z: h.z + sa * r, vx: ca * sp, vy: 0.8 + Math.random() * 1.6, vz: sa * sp, life: 2.4, size: 1.6, grow: 3.2, drag: 1.4, r: c[0], g: c[1], b: c[2], a: 0.26 * k }); }
+    else { const c = inCity(h.x, h.z) ? [0.80, 0.78, 0.74] : terrainRaw(h.x, h.z) > 60 ? [0.72, 0.5, 0.36] : [0.78, 0.66, 0.48]; emit({ x: h.x + ca * r, y: sur + 0.3, z: h.z + sa * r, vx: ca * sp, vy: 0.8 + Math.random() * 1.6, vz: sa * sp, life: 2.4, size: 1.6, grow: 3.2, drag: 1.4, r: c[0], g: c[1], b: c[2], a: 0.26 * k }); }
   }
 }
 
@@ -2323,9 +2717,9 @@ function rainUpdate(dt) {
   if (RAIN.thunder > 0) { RAIN.thunder -= dt; if (RAIN.thunder <= 0) sfx.thunder(); }
   if (RAIN.flash > 0) { RAIN.flash = Math.max(0, RAIN.flash - dt * 3.2); const f = RAIN.flash * RAIN.flash; hemiLight.intensity = GFX.tod.amb + f * 5; skyU.uGlow.value = 0.25 + f * 5; }
 }
-function systemsSetup() { herdSetup(); fireSetup(); peopleSetup(); lifeSetup(); rainSetup(); }
-function systemsUpdate(dt) { herdUpdate(dt); slingUpdate(dt); fireUpdate(dt); peopleUpdate(dt); lifeUpdate(dt); washUpdate(dt); rainUpdate(dt); }
-function systemsReset() { slingOff(); fireOff(); peopleSet([]); rainSet(false); herdInit(0, 0, 0, 0); if (LIFE.truck) { LIFE.truck.userData.parked = false; LIFE.truck.visible = true; } if (LIFE.jag) LIFE.jag.visible = false; }
+function systemsSetup() { herdSetup(); fireSetup(); peopleSetup(); lifeSetup(); rainSetup(); citySetup(); }
+function systemsUpdate(dt) { herdUpdate(dt); slingUpdate(dt); fireUpdate(dt); peopleUpdate(dt); lifeUpdate(dt); washUpdate(dt); rainUpdate(dt); cityUpdate(dt); }
+function systemsReset() { cityReset(); slingOff(); fireOff(); peopleSet([]); rainSet(false); herdInit(0, 0, 0, 0); if (LIFE.truck) { LIFE.truck.userData.parked = false; LIFE.truck.visible = true; } if (LIFE.jag) LIFE.jag.visible = false; }
 
 /* =========================================================================
    MISSÕES — nove trabalhos de um piloto de fazenda. Rota sempre livre: o jogo diz o que fazer,
@@ -2597,10 +2991,10 @@ const MISSIONS = [
   /* 9 ------------------------------------------------------------------ */
   {
     id: "livre", name: "Voo livre", tag: "Passaporte de pousos", tod: "golden", wind: { kt: 5, from: 250 }, herd: [26, 640, 1730, 75],
-    blurb: "Sem relógio. Doze lugares para pousar e carimbar o passaporte: do campo de futebol ao topo da Ponte de Pedra.",
+    blurb: "Sem relógio. Dezessete lugares para pousar e carimbar o passaporte: do campo de futebol da vila ao terraço do prédio mais alto da cidade.",
     desc: "O mapa é seu. Cada lugar novo em que você pousa vira um carimbo. O botão de ação troca a hora do dia.",
-    goals: ["Carimbar os 12 pousos do passaporte", "Ou só voar"],
-    tips: ["Alguns carimbos: a ponte de madeira, o Largo da Igreja, os dois morros de mesa e o alto da Ponte de Pedra.", "No topo da chapada o ar é mais ralo: sobra menos potência."],
+    goals: ["Carimbar os 17 pousos do passaporte", "Ou só voar"],
+    tips: ["Alguns carimbos: a ponte de madeira, o Largo da Igreja, os dois morros de mesa e o alto da Ponte de Pedra.", "Cinco ficam na cidade, 5,5 km a nordeste pela estrada: heliporto, praça, estádio, a cobertura do hospital e a da torre.", "No topo da chapada o ar é mais ralo: sobra menos potência."],
     setup(M) { M.todI = 0; },
     action(M) { return { label: "MUDAR HORA", fire() { const K = ["golden", "night", "dawn", "morning", "noon"]; M.todI = (M.todI + 1) % K.length; setTimeOfDay(K[M.todI]); toast(TOD[K[M.todI]].name, "ok", 2); } }; },
     update(M, dt, st) { },
@@ -2610,6 +3004,189 @@ const MISSIONS = [
   }
 ];
 const SITES_ACUDE = LAGOONS[4];
+
+/* =========================================================================
+   MISSÕES DA CIDADE — quatro trabalhos em São Bento do Cerrado.
+   Entram na lista antes do "Voo livre", que continua sendo o último.
+   ========================================================================= */
+const CITY_MISSIONS = [
+  /* táxi aéreo ---------------------------------------------------------- */
+  {
+    id: "taxi", city: true, name: "Ponte aérea", tag: "Táxi aéreo", tod: "morning", wind: { kt: 7, from: 80 }, herd: [20, 640, 1730, 70],
+    blurb: "O patrão tem reunião no último andar do prédio mais alto de São Bento do Cerrado. Quatro corridas, quatro pousos, dois deles em cobertura.",
+    desc: "Leve o fazendeiro da Santa Fé até a cobertura da Torre do Cerrado: siga a estrada para o nordeste, passando a vila, até a cidade aparecer. Lá, cada passageiro que desce dá lugar a outro, com um destino novo. Quem chega dentro do tempo e pousa macio paga gorjeta cheia.",
+    goals: ["Pousar dentro do círculo em cada destino e esperar o desembarque", "Ficar pousado até o próximo passageiro embarcar", "Fazer as quatro corridas"],
+    tips: ["Cobertura: chegue alto e devagar, e desça na vertical só nos últimos metros.", "No alto de um prédio não há efeito solo em volta: o helicóptero pede mais potência do que no chão.", "Com passageiro sobra menos potência. Olhe a pressão de admissão antes de puxar o coletivo."],
+    focus: () => { const t = SITES.torre; return { x: t.x, y: 60, z: t.z, r: 430, h: 130 }; },
+    setup(M) {
+      M.legs = [{ to: "torre", who: "Seu Anselmo, o patrão", par: 240 }, { to: "estadio", who: "A presidente do clube", par: 85 }, { to: "hotel", who: "O técnico visitante", par: 90 }, { to: "heliporto", who: "Uma turista de malas prontas", par: 90 }];
+      M.i = 0; M.legT = 0; M.tips = 0; M.vsi = 0; M.worst = 0; M.rows = []; M.state = "fly"; heli.baseK = 1.12; heli.massK = 1.12;
+      toast("Seu Anselmo já está a bordo. A cidade fica a 5,5 km, no fim da estrada.", "ok", 7);
+    },
+    touch(M, td) { M.vsi = td.vsi; M.worst = Math.max(M.worst, td.vsi); },
+    update(M, dt, st) {
+      const L = M.legs[M.i], s = SITES[L.to];
+      if (M.state === "fly") {
+        M.legT += dt;
+        if (hold(M, "ds", landedAt(s.x, s.z, s.pad + 1.5, s.y), dt, 2.2, "DESEMBARQUE")) {
+          const tT = 100 * clamp(1 - (M.legT - L.par) / L.par, 0, 1), tL = 100 * clamp(1 - (M.vsi - 120) / 260, 0, 1), tip = Math.round((tT + tL) / 5) * 5;
+          M.tips += tip; M.rows.push([L.who, "R$ " + tip]); M.ds = 0; heli.baseK = 1; heli.massK = 1; sfx.chime();
+          if (M.i === M.legs.length - 1) { missionEnd(true, "Quatro corridas feitas. Gorjetas do dia: R$ " + M.tips + "."); return; }
+          toast(L.who + " desceu: gorjeta de R$ " + tip + ".", "ok", 4); M.state = "board";
+        }
+      } else {
+        const N = M.legs[M.i + 1];
+        if (hold(M, "bd", landedAt(s.x, s.z, s.pad + 3, s.y), dt, 3, "EMBARQUE")) { M.i++; M.legT = 0; M.bd = 0; M.state = "fly"; heli.baseK = 1.12; heli.massK = 1.12; sfx.chime(); toast(N.who + " embarcou. Destino: " + SITES[N.to].name + ".", "ok", 6); }
+      }
+    },
+    hud(M) {
+      const L = M.legs[M.i], s = SITES[L.to];
+      return M.state === "fly" ? { obj: "Leve a: " + s.name, sub: L.who, prog: [M.i, 4], timer: M.legT, info: "Gorjeta cheia até " + fmtT(L.par) + " · total R$ " + M.tips }
+        : { obj: "Espere o próximo passageiro", sub: "Fique pousado no heliponto", prog: [M.i + 1, 4], info: "Gorjetas até agora: R$ " + M.tips };
+    },
+    markers(M) { const s = SITES[M.legs[M.i].to]; return [{ x: s.x, y: s.y, z: s.z, label: s.name.replace(/ \(.*/, ""), r: s.pad }]; },
+    result(M) { return { medal: M.tips >= 600 ? 3 : M.tips >= 420 ? 2 : 1, rows: M.rows.concat([["Total de gorjetas", "R$ " + M.tips], ["Pouso mais duro", fmt(M.worst) + " pés/min"], ["Ouro", "R$ 600"], ["Prata", "R$ 420"]]) }; }
+  },
+  /* resgate aeromédico -------------------------------------------------- */
+  {
+    id: "plantao", city: true, name: "Plantão da Santa Casa", tag: "Resgate aeromédico", tod: "golden", wind: { kt: 8, from: 250, gust: 2 }, startAt: "hospital",
+    blurb: "Três chamados e nenhum lugar fácil para pousar: um cruzamento entre prédios, o gramado do estádio e o topo de uma obra, ao lado da grua.",
+    desc: "Você começa no heliponto da cobertura da Santa Casa. A central passa um chamado por vez: pouse ao lado do ferido, espere o embarque e traga de volta para a cobertura do hospital. O relógio de cada chamado corre desde o toque do rádio.",
+    goals: ["Pousar no local do chamado e esperar o embarque (3 s)", "Pousar no heliponto da cobertura da Santa Casa para entregar", "Atender os três chamados, cada um em menos de 6 minutos e meio"],
+    tips: ["O trânsito para quando o helicóptero desce na rua, mas os prédios não saem do lugar: desça na vertical.", "No topo da obra, chegue pelo lado oposto ao da grua.", "Fim de tarde com rajada: na cobertura, mantenha o nariz no vento (veja a seta do vento na bússola)."],
+    focus: () => { const t = SITES.hospital; return { x: t.x, y: 30, z: t.z, r: 300, h: 90 }; },
+    setup(M) {
+      const a = cityW(0, -192), o = SITES.obra, e = SITES.estadio, gy = CITY.y + 0.1, hs = SITES.hospital;
+      M.calls = [
+        { name: "Cruzamento da Avenida Norte", txt: "Central: colisão de moto no cruzamento da Avenida Norte.", x: a[0], z: a[1], y: gy, r: 9 },
+        { name: "Gramado do estádio", txt: "Central: jogador caído no gramado do Estádio Municipal.", x: e.x, z: e.z, y: e.y, r: 12 },
+        { name: "Topo do prédio em obras", txt: "Central: operário ferido no último andar da obra, ao lado da grua.", x: o.x, z: o.z, y: o.y, r: 9 }];
+      M.team = [{ x: hs.x + 9.5, z: hs.z + 4, y: hs.y, col: 0xf4f4f0, face: 0 }, { x: hs.x + 9.5, z: hs.z + 5.6, y: hs.y, col: 0x2e9a6a, face: 0 }];
+      const mg = new GB(); mg.box(0, 0.2, 0, 1.9, 0.5, 0.5, 0xc23b2b, 0.5, 0, 1.2); mg.cyl(0.9, 0, 0.6, 0.32, 0.32, 0.14, 8, 0x1c1c1c, Math.PI / 2); mg.cyl(-0.8, 0, -0.5, 0.32, 0.32, 0.14, 8, 0x1c1c1c, 0.3);
+      const moto = mg.mesh(MAT.flat); moto.position.set(a[0] + 6.5, gy, a[1] - 5); scene.add(moto); M.props = [moto];
+      M.i = 0; M.aboard = false; M.callT = 0; M.worst = 0; M.times = [];
+      this.call(M);
+    },
+    call(M) {
+      const c = M.calls[M.i]; M.callT = 0;
+      M.ppl = M.team.concat([{ x: c.x + c.r - 1.5, z: c.z + 3, y: c.y, col: 0xf2c230, wave: true }, { x: c.x + c.r - 0.5, z: c.z + 4.6, y: c.y, col: 0xe8432e, s: 0.9 }]);
+      peopleSet(M.ppl); sfx.beep(880, 0.12, 0.2); toast(c.txt, "warn", 7);
+    },
+    touch(M, td) { M.worst = Math.max(M.worst, td.vsi); },
+    update(M, dt, st) {
+      const c = M.calls[M.i], hs = SITES.hospital; M.callT += dt;
+      if (M.callT > 390) { missionEnd(false, "Demorou demais: a ambulância de rua chegou antes e o chamado foi cancelado."); return; }
+      if (!M.aboard) {
+        if (hold(M, "bd", landedAt(c.x, c.z, c.r + 1.5, c.y), dt, 3, "EMBARQUE")) { M.aboard = true; M.bd = 0; heli.baseK = 1.12; heli.massK = 1.12; M.ppl[3].gone = true; sfx.chime(); toast("Paciente a bordo. De volta para a cobertura da Santa Casa!", "ok", 5); }
+      } else if (hold(M, "ds", landedAt(hs.x, hs.z, hs.pad + 1.5, hs.y), dt, 2, "ENTREGA")) {
+        M.times.push(M.callT); M.aboard = false; M.ds = 0; heli.baseK = 1; heli.massK = 1; sfx.chime(); M.i++;
+        if (M.i >= M.calls.length) { M.i = M.calls.length - 1; missionEnd(true, "Três chamados, três pacientes entregues no centro cirúrgico."); return; }
+        this.call(M);
+      }
+    },
+    hud(M) {
+      const c = M.calls[M.i], n = M.times.length;
+      return M.aboard ? { obj: "Leve o paciente à Santa Casa", sub: "Heliponto na cobertura do hospital", prog: [n, 3], timer: M.callT, info: "Tempo total " + fmtT(M.t) }
+        : { obj: "Chamado: " + c.name, sub: "Pouse ao lado e espere o embarque", prog: [n, 3], timer: M.callT, info: "Tempo total " + fmtT(M.t) };
+    },
+    markers(M) { const c = M.calls[M.i], hs = SITES.hospital; return M.aboard ? [{ x: hs.x, y: hs.y, z: hs.z, label: "Santa Casa", r: hs.pad }] : [{ x: c.x, y: c.y, z: c.z, label: "Chamado", r: c.r, color: 0xffc14a }]; },
+    result(M) { return { medal: M.t <= 480 && M.worst <= 250 ? 3 : M.t <= 660 ? 2 : 1, rows: M.times.map((t, i) => ["Chamado " + (i + 1), fmtT(t)]).concat([["Tempo total", fmtT(M.t)], ["Pouso mais duro", fmt(M.worst) + " pés/min"], ["Ouro", "8:00 e pousos até 250 pés/min"], ["Prata", "11:00"]]) }; }
+  },
+  /* içamento de precisão ------------------------------------------------ */
+  {
+    id: "icamento", city: true, name: "Carga na cobertura", tag: "Içamento de precisão", tod: "noon", wind: { kt: 10, from: 140, gust: 2 }, startAt: "heliporto",
+    blurb: "A grua da obra quebrou e o ar-condicionado da torre não sobe de elevador. Duas cargas penduradas num cabo de 9 metros, cada uma num alvo de 6 metros.",
+    desc: "As cargas estão no pátio do heliporto. Engate o gerador e pouse-o no topo do prédio em obras, a 44 metros de altura, com a grua ao lado. Depois engate o ar-condicionado e leve ao terraço da Torre do Cerrado, a 110 metros. Vento de 10 nós com rajada: a carga balança e o alvo é pequeno.",
+    goals: ["Engatar: pairar sobre a carga a 15–35 pés por 2,5 s", "Encostar cada carga dentro do anel de 6 m e segurar 1 s", "Voltar e pousar no heliporto"],
+    tips: ["Suba na vertical até passar da altura do prédio, só depois ande para cima dele.", "Pare a carga ANTES de descer: sem balanço, ela pousa onde você quer.", "Carga que bate a mais de 5 m/s quebra. Ouro pede toque de até 1,8 m/s."],
+    focus: () => { const t = SITES.obra; return { x: t.x, y: 40, z: t.z, r: 330, h: 110 }; },
+    setup(M) {
+      const o = SITES.obra, t = SITES.torre;
+      M.picks = [CT.load1, CT.load2]; M.drops = [{ x: o.x, z: o.z, y: o.y }, { x: t.x, z: t.z, y: t.y }];
+      slingPlace("gen", M.picks[0][0], M.picks[0][1], 9, 85); M.leg = 0; M.maxImp = 0; M.props = [];
+      const g2 = HELI.loads.ac.clone(); g2.visible = true; g2.position.set(M.picks[1][0], surfaceH(M.picks[1][0], M.picks[1][1]) + 0.5, M.picks[1][1]); g2.rotation.set(0, 0, 0); scene.add(g2); M.props.push(g2); M.wait = g2;
+    },
+    action(M) { return SL.attached ? { label: "SOLTAR CARGA", fire() { SL.attached = false; toast("Carga solta.", "warn", 2); } } : null; },
+    update(M, dt, st) {
+      if (SL.on && SL.impact > 0) { M.maxImp = Math.max(M.maxImp, SL.impact); if (SL.impact > 5) { missionEnd(false, "A carga bateu a " + fmt(SL.impact, 1) + " m/s e quebrou."); return; } SL.impact = 0; }
+      if (M.leg === 0 || M.leg === 2) {
+        const ok = SL.on && !SL.attached && hoverAt(SL.x, SL.z, 4.5, SL.y - SL.half, 3.5, 11, 5);
+        if (hold(M, "hk", ok, dt, 2.5, "ENGATANDO")) { SL.attached = true; M.hk = 0; M.leg++; sfx.chime(); toast("Engatado! Suba na vertical até o cabo esticar.", "ok", 4); }
+      } else if (M.leg === 1 || M.leg === 3) {
+        const T = M.drops[(M.leg - 1) / 2];
+        if (!SL.attached) { M.leg--; toast("A carga foi solta fora do lugar. Engate de novo.", "warn", 4); return; }
+        const ok = SL.grounded && Math.hypot(SL.x - T.x, SL.z - T.z) < 6.5 && Math.abs(SL.y - SL.half - T.y) < 1.2 && Math.hypot(SL.vx, SL.vz) < 1.2;
+        if (hold(M, "rl", ok, dt, 1.0, "ENTREGANDO")) {
+          const m = HELI.loads[SL.kind].clone(); scene.add(m); M.props.push(m); SL.attached = false; M.rl = 0; sfx.chime();
+          if (M.leg === 1) { toast("Gerador no topo da obra. Volte ao heliporto e engate o ar-condicionado.", "ok", 6); M.wait.visible = false; slingPlace("ac", M.picks[1][0], M.picks[1][1], 9, 70); }
+          else { toast("Ar-condicionado no terraço da torre. Pouse no heliporto.", "ok", 6); slingOff(); }
+          M.leg++;
+        }
+      } else if (landedAt(SITES.heliporto.x, SITES.heliporto.z, 9.5, SITES.heliporto.y)) missionEnd(true, "Duas cargas no lugar, nenhuma janela quebrada.");
+    },
+    hud(M) {
+      const L = ["Engate o gerador", "Leve o gerador ao topo da obra", "Engate o ar-condicionado", "Leve ao terraço da Torre do Cerrado", "Pouse no heliporto"][M.leg];
+      const S = ["Paire sobre ele, 15–35 pés", "Encoste a carga dentro do anel de 6 m", "No pátio do heliporto: paire a 15–35 pés", "Encoste a carga dentro do anel de 6 m", "Heliporto de São Bento"][M.leg];
+      return { obj: L, sub: S, prog: [Math.min(M.leg, 4), 4], timer: M.t, load: SL.attached && SL.taut && !SL.grounded ? fmt(SL.mass) + " kg no cabo" : null };
+    },
+    markers(M) {
+      if (M.leg === 0 || M.leg === 2) return [mark(SL.x, SL.z, M.leg ? "Ar-condicionado" : "Gerador", { r: 5, color: 0xffc14a })];
+      if (M.leg === 1 || M.leg === 3) { const T = M.drops[(M.leg - 1) / 2]; return [{ x: T.x, y: T.y, z: T.z, label: "Entrega", r: 6.5 }]; }
+      const h = SITES.heliporto; return [{ x: h.x, y: h.y, z: h.z, label: "Heliporto", r: 9 }];
+    },
+    result(M) { return { medal: M.t <= 420 && M.maxImp <= 1.8 ? 3 : M.t <= 600 ? 2 : 1, rows: [["Tempo", fmtT(M.t)], ["Toque mais forte da carga", fmt(M.maxImp, 1) + " m/s"], ["Ouro", "7:00 e carga a até 1,8 m/s"], ["Prata", "10:00"]] }; }
+  },
+  /* apoio à polícia ----------------------------------------------------- */
+  {
+    id: "cerco", city: true, name: "Olho no fugitivo", tag: "Apoio à polícia, à noite", tod: "night", wind: { kt: 4, from: 60 }, startAt: "heliporto",
+    blurb: "Assalto ao Banco do Cerrado. Um carro prata some pelas ruas e você é o único que enxerga de cima. Mantenha o farol nele até a barreira fechar.",
+    desc: "Decole do heliporto e ache o carro prata em frente ao banco, no centro. Enquanto você estiver perto e com o nariz mais ou menos para ele, o farol segue o carro sozinho e a polícia sabe onde ele está. Fora do foco por 15 segundos seguidos, ele some. Depois de 45 segundos no foco ele desiste da cidade e pega a estrada da vila, onde a barreira espera.",
+    goals: ["Manter o carro no foco: a menos de 190 m, abaixo de 570 pés, nariz até 65° para o lado dele", "Nunca passar 15 s seguidos fora do foco", "Na estrada, somar 22 s de foco antes de ele chegar à barreira"],
+    tips: ["Voe mais alto que os prédios do bairro (150 pés bastam fora do centro) e deixe as torres do centro de lado: elas têm luz vermelha no topo.", "Ele vira nas esquinas sem avisar: fique um pouco atrás, não em cima.", "Na estrada ele passa de 45 nós. Baixe o nariz cedo para não ficar para trás."],
+    focus: () => { const t = cityW(31, -10); return { x: t[0], y: 30, z: t[1], r: 320, h: 120 }; },
+    setup(M) {
+      fugInit(4, 3, 1, 0); CT.fg.t = 0.33; fugStep(0);
+      const R = ROADS.main, sb = R[R.length - 1][2] - 1500, a = alongLine(R, sb), by = terrainRaw(a.x, a.z) + 0.1;
+      M.sb = sb; M.bar = { x: a.x, z: a.z, y: by };
+      CT.pol.forEach((p, k) => { const o = k ? 3.4 : -3.4; p.position.set(a.x - a.tx * 4 + a.tz * o * 0.2 - a.tx * k * 5, by, a.z - a.tz * 4 - a.tx * o * 0.2 - a.tz * k * 5); p.rotation.y = -Math.atan2(a.tz, a.tx) + (k ? 1.0 : -1.0); p.visible = false; });
+      M.cont = 0; M.road = 0; M.lost = 0; M.lostTot = 0; M.first = false; M.phase = 0; M.go = false; M.inL = false; M.d = 999;
+      toast("Central: assalto em andamento no Banco do Cerrado. Carro prata na porta.", "warn", 7); sfx.beep(880, 0.12, 0.2);
+    },
+    update(M, dt, st) {
+      const f = CT.fg; fugStep(dt);
+      const dx = f.x - heli.x, dz = f.z - heli.z, d = Math.hypot(dx, dz), rel = wrapPi(Math.atan2(dz, dx) - heli.yaw), cy = CT.fug.position.y;
+      M.d = d;
+      if (!M.go && (M.t > 22 || d < 200)) { M.go = true; f.stop = false; toast("Central: o carro prata saiu do banco. Não perca de vista!", "warn", 5); sfx.beep(990, 0.12, 0.2); }
+      const inL = M.go && !heli.onGround && d < 190 && heli.y - cy < 175 && (Math.abs(rel) < d2r(65) || d < 50);
+      M.inL = inL; HELI.aim = inL ? { x: f.x, y: cy + 0.7, z: f.z } : null;
+      if (inL) { M.cont += dt; M.lost = 0; M.first = true; if (f.mode === "road") M.road += dt; } else if (M.first) { M.lost += dt; M.lostTot += dt; }
+      if (M.first && M.lost > 15) { missionEnd(false, "Quinze segundos sem o farol nele: o carro prata sumiu."); return; }
+      if (!M.first && M.go && M.t > 110) { missionEnd(false, "Você não chegou a tempo: ninguém viu para onde o carro foi."); return; }
+      if (M.phase === 0 && M.cont >= 45) { M.phase = 1; f.exit = true; CT.pol.forEach(p => { p.visible = true; }); toast("Ele desistiu da cidade: vai para a estrada da vila. A barreira está montada!", "warn", 6); sfx.beep(990, 0.12, 0.2); }
+      if (M.phase === 1 && f.mode === "road" && !M.said) { M.said = true; toast("Pegou a estrada. Acelere: ele passa de 45 nós.", "warn", 5); }
+      if (f.mode === "road" && f.s <= M.sb + 16) {
+        f.stop = true;
+        if (M.road >= 22) missionEnd(true, "A barreira fechou na hora certa. Carro prata parado, ninguém ferido.");
+        else missionEnd(false, "Sem o helicóptero em cima, a barreira não soube de onde ele vinha. Passou por um desvio.");
+      }
+    },
+    hud(M) {
+      const fg = CT.fg || { vx: 0, vz: 0, mode: "" }, sp = fmt(Math.hypot(fg.vx, fg.vz) / KT), info = "Carro a " + fmt(M.d) + " m · " + sp + " kt";
+      if (!M.go) return { obj: "Ache o carro prata", sub: "Em frente ao Banco do Cerrado, no centro", info };
+      const prog = M.phase === 0 ? [Math.min(45, Math.floor(M.cont)), 45] : [Math.min(22, Math.floor(M.road)), 22];
+      return M.inL ? { obj: "No foco: fique em cima dele", sub: M.phase === 0 ? "A polícia está fechando as saídas" : (fg.mode === "road" ? "Estrada da vila: a barreira está logo à frente" : "Ele procura a saída oeste da cidade"), prog, info }
+        : { obj: M.first ? "FORA DO FOCO: volte já" : "Chegue perto e aponte o nariz para ele", sub: "Menos de 190 m, abaixo de 570 pés", prog, timer: M.first ? 15 - M.lost : null, info };
+    },
+    markers(M) {
+      const f = CT.fg, out = [{ x: f.x, y: CT.fug.position.y, z: f.z, label: "Carro prata", r: 5, tall: 14, color: 0xffc14a, hidden: !M.inL }];
+      if (M.phase === 1) out.push({ x: M.bar.x, y: M.bar.y, z: M.bar.z, label: "Barreira", hidden: true });
+      return out;
+    },
+    result(M) { return { medal: M.lostTot <= 10 ? 3 : M.lostTot <= 28 ? 2 : 1, rows: [["Tempo no foco", fmtT(M.cont)], ["Tempo fora do foco", fmt(M.lostTot) + " s"], ["Tempo total", fmtT(M.t)], ["Ouro", "até 10 s fora do foco"], ["Prata", "até 28 s"]] }; }
+  }
+];
+MISSIONS.splice(MISSIONS.length - 1, 0, ...CITY_MISSIONS);
+STAMP_KEYS.push("heliporto", "praca", "estadio", "hospital", "torre");
 
 /* =========================================================================
    PAINEL DE VOO (HUD) — desenhado em canvas 2D por cima do 3D.
@@ -2643,6 +3220,7 @@ function buildMapCanvas() {
   c.strokeStyle = "rgba(215,160,105,.9)"; c.lineWidth = 1.1;
   for (const key in ROADS) { c.beginPath(); ROADS[key].forEach((p, i) => i ? c.lineTo(X(p[0]), X(p[1])) : c.moveTo(X(p[0]), X(p[1]))); c.stroke(); }
   const st = SITES.strip; c.strokeStyle = "#e9c9a0"; c.lineWidth = 1.6; c.beginPath(); c.moveTo(X(st.x - st.len / 2), X(st.z)); c.lineTo(X(st.x + st.len / 2), X(st.z)); c.stroke();
+  cityDrawMap(c, X);
   c.fillStyle = "#fff"; for (const k of STAMP_KEYS) { const q = SITES[k]; if (!q) continue; c.beginPath(); c.arc(X(q.x), X(q.z), 2.2, 0, 7); c.fill(); }
 }
 
@@ -2658,7 +3236,7 @@ function drawHud(dt, st) {
   if (!hc) return;
   hc.setTransform(hudDpr, 0, 0, hudDpr, 0, 0); hc.clearRect(0, 0, HW, HH);
   if (gameState !== "flying" && gameState !== "ended") return;
-  const h = heli, info = mission.hud ? mission.hud(M) : {}, marks = M.marks || [], small = HH < 420, S = small ? 0.86 : 1;
+  const h = heli, info = mission.hud ? mission.hud(M) : {}, marks = M.marks || [], small = HH < 420, S = small ? 0.86 : 1, sim = !!save.opt.sim;
   const cx = HW / 2;
 
   // ---- marcadores no mundo ----
@@ -2703,26 +3281,26 @@ function drawHud(dt, st) {
 
   // ---- velocidade (esquerda) ----
   const lx = HW * (HW < 980 ? 0.27 : 0.25), ly = HH * 0.44, rx = HW * (HW < 980 ? 0.70 : 0.75);
-  txt(fmt(st.ias), lx, ly, 34 * S, st.ias > VNE - 6 ? COL.red : COL.ink, "right", 800); txt("kt", lx + 5, ly + 7, 12 * S, COL.dim, "left", 600);
+  if (!sim) { txt(fmt(st.ias), lx, ly, 34 * S, st.ias > VNE - 6 ? COL.red : COL.ink, "right", 800); txt("kt", lx + 5, ly + 7, 12 * S, COL.dim, "left", 600);
   txt("solo " + fmt(st.gs), lx, ly + 24 * S, 11 * S, COL.dim, "right", 600);
   { const bw = 86 * S, bx = lx - bw, by = ly + 38 * S, f = clamp((h.rpm - 70) / 40, 0, 1); plate(bx - 4, by - 4, bw + 8, 15, 6);
     hc.fillStyle = "rgba(142,224,106,.35)"; hc.fillRect(bx + bw * (101 - 70) / 40, by, bw * 3 / 40, 7);
     hc.fillStyle = h.rpm < RPM_HORN ? COL.red : h.rpm > 105 ? COL.amber : COL.green; hc.fillRect(bx, by, bw * f, 7);
-    txt("ROTOR " + fmt(h.rpm) + "%", lx, by + 20, 10.5 * S, h.rpm < RPM_HORN ? COL.red : COL.dim, "right", 700); }
+    txt("ROTOR " + fmt(h.rpm) + "%", lx, by + 20, 10.5 * S, h.rpm < RPM_HORN ? COL.red : COL.dim, "right", 700); } }
   if (info.signal !== undefined) { const bx = lx - 86 * S, by = ly + 78 * S, nb = 10; plate(bx - 6, by - 20, 98 * S + 6, 44, 8); txt("SINAL DA COLEIRA", bx, by - 10, 9.5, COL.dim, "left", 700);
     for (let i = 0; i < nb; i++) { const on = info.signal * nb > i; hc.fillStyle = on ? (i > 6 ? COL.green : COL.amber) : "rgba(255,243,224,.18)"; hc.fillRect(bx + i * 8.6 * S, by + 14 - (4 + i * 1.4), 6 * S, 4 + i * 1.4); } }
 
   // ---- altura por radar e variômetro (direita) ----
-  txt(fmt(st.agl), rx, ly, 34 * S, st.agl < 12 && !h.onGround ? COL.amber : COL.ink, "right", 800); txt("pés", rx + 5, ly + 7, 12 * S, COL.dim, "left", 600);
+  if (!sim) { txt(fmt(st.agl), rx, ly, 34 * S, st.agl < 12 && !h.onGround ? COL.amber : COL.ink, "right", 800); txt("pés", rx + 5, ly + 7, 12 * S, COL.dim, "left", 600);
   const vs = Math.round(st.vsi / 10) * 10; txt((vs > 0 ? "▲ " : vs < 0 ? "▼ " : "") + Math.abs(vs) + " pés/min", rx + 28, ly + 24 * S, 11 * S, vs < -700 ? COL.red : vs < -300 && st.agl < 80 ? COL.amber : COL.dim, "right", 600);
   { const bw = 86 * S, bx = rx - bw + 28, by = ly + 38 * S, lim = h.mapAmb || 29.6, f = clamp((h.mapHg - 10) / (30 - 10), 0, 1), fl = clamp((lim - 10) / 20, 0, 1), hot = h.mapHg >= lim - 0.9;
     plate(bx - 4, by - 4, bw + 8, 15, 6); hc.fillStyle = hot ? COL.red : h.mapHg > lim - 2.5 ? COL.amber : COL.cyan; hc.fillRect(bx, by, bw * f, 7); hc.fillStyle = COL.ink; hc.fillRect(bx + bw * fl - 1, by - 2, 2, 11);
-    txt("MAP " + fmt(h.mapHg, 1) + " pol", rx + 28, by + 20, 10.5 * S, hot ? COL.red : COL.dim, "right", 700); }
+    txt("MAP " + fmt(h.mapHg, 1) + " pol", rx + 28, by + 20, 10.5 * S, hot ? COL.red : COL.dim, "right", 700); } }
   if (info.bucket !== undefined) { const bx = rx - 86 * S + 28, by = ly + 78 * S, bw = 86 * S; plate(bx - 6, by - 20, bw + 12, 40, 8); txt("BALDE " + fmt(info.bucket * SL.cap) + " L", bx, by - 9, 9.5, COL.dim, "left", 700); hc.fillStyle = "rgba(255,243,224,.18)"; hc.fillRect(bx, by + 2, bw, 9); hc.fillStyle = "#6fc7e0"; hc.fillRect(bx, by + 2, bw * info.bucket, 9); }
   if (info.load) txt(info.load, rx + 28, ly + 76 * S, 10.5, COL.amber, "right");
 
   // ---- fio de lã (derrapagem) e pedal ----
-  { const fy = HH - (small ? 30 : 40), b = clamp(h.beta || 0, -0.6, 0.6), touch = document.body.classList.contains("touch"), y = touch && !tiltEnabled && !save.opt.autoPedal ? fy - 62 : fy;
+  if (sim) drawGauges(st); else { const fy = HH - (small ? 30 : 40), b = clamp(h.beta || 0, -0.6, 0.6), touch = document.body.classList.contains("touch"), y = touch && !tiltEnabled && !save.opt.autoPedal ? fy - 62 : fy;
     plate(cx - 46, y - 22, 92, 34, 10); hc.strokeStyle = "rgba(255,243,224,.3)"; hc.lineWidth = 1; hc.beginPath(); hc.moveTo(cx, y + 8); hc.lineTo(cx, y - 18); hc.stroke();
     hc.strokeStyle = Math.abs(b) > 0.16 ? COL.amber : COL.green; hc.lineWidth = 3; hc.lineCap = "round"; hc.beginPath(); hc.moveTo(cx, y + 8); hc.lineTo(cx - Math.sin(b) * 26 * 1.6, y + 8 - Math.cos(b) * 24); hc.stroke();
     hc.fillStyle = COL.ink; hc.fillRect(cx - 38 + (pedal + 1) / 2 * 76 - 2, y + 9, 4, 3);
@@ -2768,10 +3346,131 @@ function drawHud(dt, st) {
   if (showMap && mapCv) {
     const sz = Math.min(HW, HH) - 30, x0 = (HW - sz) / 2, y0 = (HH - sz) / 2, W = WORLD, k = sz / (2 * W.HALF);
     hc.fillStyle = "rgba(20,10,6,.75)"; hc.fillRect(0, 0, HW, HH); hc.drawImage(mapCv, x0, y0, sz, sz);
-    for (const key of STAMP_KEYS) { const s = SITES[key]; if (!s) continue; const X = x0 + (s.x + W.HALF) * k, Y = y0 + (s.z + W.HALF) * k; txt((save.stamps[key] ? "✓ " : "") + s.name, X + 6, Y, 10.5, save.stamps[key] ? COL.green : COL.ink, "left", 700); }
+    { const cs = STAMP_KEYS.filter(q => SITES[q] && SITES[q].city), n = cs.filter(q => save.stamps[q]).length; txt((n === cs.length ? "✓ " : "") + CITY.name + " (" + n + "/" + cs.length + ")", x0 + (CITY.x + W.HALF) * k + 18, y0 + (CITY.z + W.HALF) * k, 10.5, n === cs.length ? COL.green : COL.ink, "left", 700); }
+    for (const key of STAMP_KEYS) { const s = SITES[key]; if (!s || s.city) continue; const X = x0 + (s.x + W.HALF) * k, Y = y0 + (s.z + W.HALF) * k; txt((save.stamps[key] ? "✓ " : "") + s.name, X + 6, Y, 10.5, save.stamps[key] ? COL.green : COL.ink, "left", 700); }
     marks.forEach(m => { hc.fillStyle = COL.cyan; hc.beginPath(); hc.arc(x0 + (m.x + W.HALF) * k, y0 + (m.z + W.HALF) * k, 5, 0, 7); hc.fill(); });
     hc.save(); hc.translate(x0 + (h.x + W.HALF) * k, y0 + (h.z + W.HALF) * k); hc.rotate(h.yaw + Math.PI / 2); hc.fillStyle = "#fff"; hc.strokeStyle = "#1e110a"; hc.lineWidth = 2; hc.beginPath(); hc.moveTo(0, -11); hc.lineTo(7, 8); hc.lineTo(0, 4); hc.lineTo(-7, 8); hc.closePath(); hc.fill(); hc.stroke(); hc.restore();
     txt("Toque em MAPA de novo para fechar", cx, y0 + sz - 12, 11, COL.dim, "center", 600);
+  }
+}
+
+/* =========================================================================
+   MODO SIMULADOR — os quatro instrumentos de ponteiro do R22, no lugar dos números grandes:
+   velocímetro (nós), altímetro (pés, ponteiro de centenas e de milhares), tacômetro duplo
+   (motor e rotor, em %) e pressão de admissão (PA, em polegadas de mercúrio).
+   O mostrador fixo de cada um é desenhado uma vez; a cada quadro só os ponteiros mudam.
+   ========================================================================= */
+const GAUGE = { faces: {}, layout: null, lt: 0 };
+// ângulos em graus, no sentido horário a partir do "meio-dia"
+const GA = {
+  asi: kt => 15 + clamp(kt, 0, 122) / 120 * 315,
+  rpm: p => { const f = p <= 60 ? Math.max(0, p) / 60 * 0.15 : 0.15 + (clamp(p, 60, 112) - 60) / 50 * 0.85; return 170 - f * 150; },
+  map: m => -135 + (clamp(m, 9, 36) - 10) / 25 * 270
+};
+function gaugeLayout() {
+  const now = performance.now(), G = GAUGE.layout, act = !!(mission && mission.action);   // só as missões com botão de ação reservam o lugar dele
+  if (G && now - GAUGE.lt < 400 && G.HW === HW && G.HH === HH && G.act === act) return G;
+  GAUGE.lt = now;
+  const touch = document.body.classList.contains("touch"), gap = 6, extra = 10; let left, right, bottom = HH - 10, maxR = 54, ped = null, L;
+  if (!touch) { const w = Math.min(HW * 0.5, 470); left = HW / 2 - w / 2; right = HW / 2 + w / 2; }
+  else {
+    const rc = id => { const e = document.getElementById(id); if (!e) return null; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 ? r : null; };
+    const col = rc("colPad"), cyc = rc("cycPad"); ped = rc("pedPad");
+    left = (col ? col.right : 96) + 8; right = (cyc ? cyc.left : HW - 180) - (act ? 114 : 8);
+    maxR = 50;
+  }
+  if (ped && ped.left - left > 110) {
+    // toque sem giroscópio: a barra de pedais ocupa o centro, então os quatro vão em 2 × 2 no canto esquerdo
+    const R = clamp((ped.left - 14 - left - gap) / 4, 22, 42), x0 = left, yb = HH - 12 - R, ya = yb - 2 * R - 18;
+    L = { R, pos: [[x0 + R, ya], [x0 + 3 * R + gap, ya], [x0 + R, yb], [x0 + 3 * R + gap, yb]], px: x0 - 6, py: ya - R - 20, pw: 4 * R + gap + 20, ph: yb + R + 6 - (ya - R - 20), vsi: [x0 + 4 * R + gap + 6, ya], slip: [x0 + 2 * R + gap / 2, ya - R - 32] };
+  } else {
+    if (ped) bottom = ped.top - 8;
+    const R = clamp((right - left - 3 * gap - extra) / 8, 22, maxR), w = 8 * R + 3 * gap + extra, x = clamp((left + right) / 2 - w / 2, left, Math.max(left, right - w)), y = bottom - R - 3;
+    const gx = i => x + R + i * (2 * R + gap) + (i >= 2 ? extra : 0);
+    L = { R, pos: [0, 1, 2, 3].map(i => [gx(i), y]), px: x - 7, py: y - R - 19, pw: w + 14, ph: 2 * R + 28, vsi: [gx(1) + R + (gap + extra) / 2, y], slip: [x + w / 2, y - R - 31] };
+  }
+  L.HW = HW; L.HH = HH; L.act = act;
+  return GAUGE.layout = L;
+}
+function gaugeFace(kind, R) {
+  const key = kind + "@" + R.toFixed(1) + "@" + hudDpr; if (GAUGE.faces[key]) return GAUGE.faces[key];
+  const c = document.createElement("canvas"), px = Math.ceil((2 * R + 4) * hudDpr); c.width = c.height = px;
+  const x = c.getContext("2d"); x.scale(hudDpr, hudDpr); x.translate(R + 2, R + 2);
+  const INK = "#fff3e0", DIM = "rgba(255,243,224,.62)", GRN = "#6fd45a", YEL = "#e9b83a", RED = "#ff5a48", ra = d => d * Math.PI / 180;
+  x.fillStyle = "rgba(16,11,8,.92)"; x.beginPath(); x.arc(0, 0, R, 0, 7); x.fill();
+  x.strokeStyle = "rgba(255,243,224,.5)"; x.lineWidth = Math.max(1.2, R * 0.04); x.beginPath(); x.arc(0, 0, R - x.lineWidth / 2, 0, 7); x.stroke();
+  const ro = R * 0.90, fs = Math.max(7, R * 0.2);
+  const arc = (d0, d1, col) => { x.strokeStyle = col; x.lineWidth = R * 0.09; x.lineCap = "butt"; x.beginPath(); x.arc(0, 0, ro - R * 0.045, ra(Math.min(d0, d1) - 90), ra(Math.max(d0, d1) - 90)); x.stroke(); };
+  const tick = (d, len, w, col) => { const s = Math.sin(ra(d)), k = -Math.cos(ra(d)); x.strokeStyle = col || INK; x.lineWidth = w; x.lineCap = "butt"; x.beginPath(); x.moveTo(s * ro, k * ro); x.lineTo(s * (ro - len), k * (ro - len)); x.stroke(); };
+  const num = (d, r0, s, size, col) => { x.font = "700 " + size + "px " + FONT; x.textAlign = "center"; x.textBaseline = "middle"; x.fillStyle = col || INK; x.fillText(s, Math.sin(ra(d)) * r0, -Math.cos(ra(d)) * r0); };
+  if (kind === "asi") {
+    arc(GA.asi(50), GA.asi(VNE), GRN);
+    for (let k = 0; k <= 120; k += 5) tick(GA.asi(k), k % 10 ? R * 0.08 : R * 0.16, k % 10 ? 1 : 1.6);
+    tick(GA.asi(VNE), R * 0.26, 2.4, RED);
+    for (let k = 20; k <= 120; k += 20) num(GA.asi(k), R * 0.58, String(k), fs);
+    num(180, R * 0.30, "NÓS", fs * 0.72, DIM);
+  } else if (kind === "alt") {
+    for (let k = 0; k < 50; k++) tick(k * 7.2, k % 5 ? R * 0.07 : R * 0.16, k % 5 ? 1 : 1.6);
+    for (let k = 0; k < 10; k++) num(k * 36, R * 0.60, String(k), fs * 1.05);
+    num(0, R * 0.28, "ALT", fs * 0.72, DIM); num(180, R * 0.28, "×100 pés", fs * 0.62, DIM);
+  } else if (kind === "rpm") {
+    for (const sg of [-1, 1]) {
+      const A = p => sg * GA.rpm(p);
+      arc(A(90), A(101), YEL); arc(A(101), A(104), GRN); arc(A(104), A(110), YEL);
+      for (let p = 60; p <= 110; p += 5) tick(A(p), p % 10 ? R * 0.07 : R * 0.15, p % 10 ? 1 : 1.5);
+      tick(A(110), R * 0.24, 2.2, RED); if (sg > 0) tick(A(90), R * 0.24, 2.2, RED);
+      for (const p of [60, 80, 100]) num(A(p), R * 0.60, String(p), fs * 0.8);
+    }
+    num(0, R * 0.56, "RPM %", fs * 0.66, DIM); x.font = "800 " + fs * 0.95 + "px " + FONT; x.fillStyle = INK; x.fillText("M", -R * 0.22, R * 0.66); x.fillText("R", R * 0.22, R * 0.66);
+  } else {
+    for (let k = 10; k <= 35; k++) tick(GA.map(k), k % 5 ? R * 0.07 : R * 0.16, k % 5 ? 1 : 1.6);
+    for (let k = 10; k <= 35; k += 5) num(GA.map(k), R * 0.58, String(k), fs);
+    num(0, R * 0.30, "PA", fs * 0.9, DIM); num(180, R * 0.50, "pol Hg", fs * 0.66, DIM);
+  }
+  return GAUGE.faces[key] = c;
+}
+function gNeedle(cx, cy, deg, len, w, col, tail) {
+  const a = deg * Math.PI / 180, s = Math.sin(a), k = -Math.cos(a), t = tail || 0;
+  hc.lineCap = "round";
+  hc.strokeStyle = "rgba(0,0,0,.5)"; hc.lineWidth = w + 2; hc.beginPath(); hc.moveTo(cx - s * t, cy - k * t); hc.lineTo(cx + s * len, cy + k * len); hc.stroke();
+  hc.strokeStyle = col; hc.lineWidth = w; hc.beginPath(); hc.moveTo(cx - s * t, cy - k * t); hc.lineTo(cx + s * len, cy + k * len); hc.stroke();
+}
+function drawGauges(st) {
+  const L = gaugeLayout(), R = L.R, h = heli, fs = Math.max(8.5, R * 0.235), S = 2 * R + 4, P = L.pos, air = !h.onGround;
+  plate(L.px, L.py, L.pw, L.ph, 14);
+  const face = (kind, i) => hc.drawImage(gaugeFace(kind, R), P[i][0] - R - 2, P[i][1] - R - 2, S, S);
+  const hub = i => { hc.fillStyle = "#2a1c12"; hc.beginPath(); hc.arc(P[i][0], P[i][1], Math.max(2.5, R * 0.09), 0, 7); hc.fill(); hc.strokeStyle = "rgba(255,243,224,.6)"; hc.lineWidth = 1; hc.stroke(); };
+  const cap = (i, s, col) => txt(s, P[i][0], P[i][1] - R - 9, fs, col || COL.dim, "center", 700);
+
+  // velocímetro
+  face("asi", 0); gNeedle(P[0][0], P[0][1], GA.asi(st.ias), R * 0.76, 2.4, st.ias > VNE - 6 ? COL.red : COL.ink, R * 0.16); hub(0); cap(0, "solo " + fmt(st.gs) + " kt");
+  // altímetro: ponteiro curto = milhares de pés, ponteiro longo = centenas
+  face("alt", 1); const alt = Math.max(0, st.alt);
+  gNeedle(P[1][0], P[1][1], alt / 10000 * 360, R * 0.44, 4.2, COL.ink, R * 0.1); gNeedle(P[1][0], P[1][1], (alt % 1000) / 1000 * 360, R * 0.78, 2.2, COL.ink, R * 0.16); hub(1);
+  cap(1, "chão " + fmt(st.agl) + " pés", st.agl < 12 && air ? COL.amber : COL.ink);
+  // variômetro: barrinha ao lado do altímetro (cheia = 1000 pés/min)
+  { const bx = L.vsi[0], cy = L.vsi[1], bh = R * 0.8, v = clamp(st.vsi / 1000, -1, 1);
+    hc.fillStyle = "rgba(255,243,224,.22)"; hc.fillRect(bx - 2, cy - bh, 4, 2 * bh);
+    hc.fillStyle = st.vsi < -700 ? COL.red : st.vsi < -300 && st.agl < 80 ? COL.amber : v >= 0 ? COL.green : COL.ink; hc.fillRect(bx - 2, v >= 0 ? cy - bh * v : cy, 4, bh * Math.abs(v));
+    hc.fillStyle = COL.ink; hc.fillRect(bx - 4, cy - 0.75, 8, 1.5); }
+  // tacômetro duplo: M = motor (esquerda), R = rotor (direita). Em voo normal os dois ponteiros andam juntos.
+  face("rpm", 2); gNeedle(P[2][0], P[2][1], -GA.rpm(h.tacEng), R * 0.74, 2.4, COL.ink, 0); gNeedle(P[2][0], P[2][1], GA.rpm(h.rpm), R * 0.74, 2.4, h.rpm < RPM_HORN && air ? COL.red : COL.ink, 0); hub(2);
+  cap(2, "M " + fmt(h.tacEng) + " · R " + fmt(h.rpm), h.rpm < RPM_HORN && air ? COL.red : COL.dim);
+  // pressão de admissão: a marca vermelha é o limite do dia (cai com a altitude e com o calor)
+  face("map", 3); const lim = h.mapAmb || 29.6, hot = h.mapHg >= lim - 0.9, ra = d => (d - 90) * Math.PI / 180, ro = R * 0.90, mx = P[3][0], my = P[3][1];
+  hc.lineCap = "butt"; hc.strokeStyle = "#e9b83a"; hc.lineWidth = R * 0.09; hc.beginPath(); hc.arc(mx, my, ro - R * 0.045, ra(GA.map(lim - 2.5)), ra(GA.map(lim))); hc.stroke();
+  { const a = GA.map(lim) * Math.PI / 180, s = Math.sin(a), k = -Math.cos(a); hc.strokeStyle = COL.red; hc.lineWidth = 2.4; hc.beginPath(); hc.moveTo(mx + s * ro, my + k * ro); hc.lineTo(mx + s * (ro - R * 0.26), my + k * (ro - R * 0.26)); hc.stroke(); }
+  gNeedle(mx, my, GA.map(h.mapHg), R * 0.76, 2.4, hot ? COL.red : COL.ink, R * 0.16); hub(3); cap(3, "PA " + fmt(h.mapHg, 1), hot ? COL.red : COL.dim);
+
+  // bolinha de derrapagem (faz o papel do fio de lã: "pise na bolinha") e a posição do pedal
+  { const bx = L.slip[0], by = L.slip[1], b = clamp(Math.sin(h.beta || 0) / 0.42, -1, 1);
+    plate(bx - 46, by - 9, 92, 20, 9); hc.strokeStyle = "rgba(255,243,224,.45)"; hc.lineWidth = 1; hc.beginPath(); hc.moveTo(bx - 7.5, by - 7); hc.lineTo(bx - 7.5, by + 5); hc.moveTo(bx + 7.5, by - 7); hc.lineTo(bx + 7.5, by + 5); hc.stroke();
+    hc.fillStyle = Math.abs(b) > 0.28 ? COL.amber : COL.green; hc.beginPath(); hc.arc(bx + b * 34, by - 1, 5, 0, 7); hc.fill();
+    hc.fillStyle = COL.ink; hc.fillRect(bx - 38 + (pedal + 1) / 2 * 76 - 2, by + 7, 4, 3); }
+  // sem toque: onde estão o coletivo e o cíclico
+  if (!document.body.classList.contains("touch")) {
+    const bx = L.px - 97, by = P[0][1] - 16; plate(bx - 6, by - 4, 84, 40, 8); hc.fillStyle = "rgba(255,243,224,.2)"; hc.fillRect(bx, by, 8, 32); hc.fillStyle = COL.amber; hc.fillRect(bx, by + 32 * (1 - collective), 8, 32 * collective);
+    hc.strokeStyle = "rgba(255,243,224,.3)"; hc.lineWidth = 1; hc.strokeRect(bx + 22, by, 32, 32); hc.fillStyle = COL.ink; hc.beginPath(); hc.arc(bx + 38 + cyclicLat * 14, by + 16 + cyclic * 14, 3.2, 0, 7); hc.fill(); txt(fmt(collective * 100) + "%", bx + 60, by + 16, 9.5, COL.dim, "left", 700);
   }
 }
 
@@ -2848,7 +3547,7 @@ const medalHtml = m => '<span class="md"><i class="' + (m >= 1 ? "b" : "") + '">
 
 function buildMenu() {
   $("ver").textContent = "versão " + VERSION;
-  $("cards").innerHTML = MISSIONS.map((m, i) => '<button class="mc" data-i="' + i + '"><div class="n"><span>TRABALHO ' + (i + 1) + '</span>' + (m.id === "livre" ? "" : medalHtml(save.medals[m.id] || 0)) + '</div><div class="nm">' + m.name + '</div><div class="ds">' + m.blurb + '</div><span class="tg">' + m.tag + '</span></button>').join("");
+  $("cards").innerHTML = MISSIONS.map((m, i) => '<button class="mc" data-i="' + i + '"><div class="n"><span>' + (m.city ? 'NA CIDADE · ' : 'TRABALHO ') + (i + 1) + '</span>' + (m.id === "livre" ? "" : medalHtml(save.medals[m.id] || 0)) + '</div><div class="nm">' + m.name + '</div><div class="ds">' + m.blurb + '</div><span class="tg">' + m.tag + '</span></button>').join("");
   $("cards").querySelectorAll(".mc").forEach(b => { b.onclick = () => openBriefing(+b.dataset.i); });
   $("cards").onwheel = e => { $("cards").scrollLeft += e.deltaY; };
   refreshOpts();
@@ -2858,9 +3557,10 @@ function refreshOpts() {
   $("oTilt").classList.toggle("on", !!tiltEnabled); $("oTilt").textContent = tiltEnabled ? "Giroscópio ligado" : "Ligar giroscópio";
   $("oPed").textContent = $("paPed").textContent = save.opt.autoPedal ? "Pedais: automáticos" : "Pedais: manuais"; $("oPed").classList.toggle("on", !save.opt.autoPedal);
   $("oGfx").textContent = $("paGfx").textContent = "Gráfico: " + q; $("oSnd").textContent = $("paSnd").textContent = save.opt.sound ? "Som: ligado" : "Som: desligado";
+  $("oSim").textContent = $("paSim").textContent = save.opt.sim ? "Painel: simulador" : "Painel: simples"; $("oSim").classList.toggle("on", !!save.opt.sim); $("paSim").classList.toggle("on", !!save.opt.sim);
   $("oStamps").textContent = "Passaporte de pousos: " + Object.keys(save.stamps).length + "/" + STAMP_KEYS.length;
   $("paKeys").innerHTML = document.body.classList.contains("touch") ? "Coletivo na esquerda · incline o celular para o cíclico (botão GIRO) · barra de pedais na direita · CENTRO zera o giroscópio na posição em que o celular estiver."
-    : "<b>W</b>/<b>S</b> coletivo · <b>setas</b> cíclico · <b>Q</b>/<b>E</b> pedais · <b>X</b> centra · <b>Espaço</b> ação · <b>C</b> câmera · <b>M</b> mapa · <b>G</b> pedais automáticos · <b>T</b> corta/religa o motor · <b>P</b> pausa · <b>R</b> reinicia";
+    : "<b>W</b>/<b>S</b> coletivo · <b>setas</b> cíclico · <b>Q</b>/<b>E</b> pedais · <b>X</b> centra · <b>Espaço</b> ação · <b>C</b> câmera · <b>M</b> mapa · <b>I</b> painel de simulador · <b>G</b> pedais automáticos · <b>T</b> corta/religa o motor · <b>P</b> pausa · <b>R</b> reinicia";
 }
 function show(id) { for (const k of ["menu", "brief", "pause", "debrief"]) $(k).style.display = (k === id) ? "flex" : "none"; }
 function applyAmbience(D) {
@@ -2875,7 +3575,7 @@ function openBriefing(i) {
   $("brCond").innerHTML = ["<span>" + TOD[D.tod].name + "</span>", "<span>Vento " + String(D.wind.from).padStart(3, "0") + "° / " + D.wind.kt + " kt" + (D.wind.gust ? " com rajadas" : "") + "</span>", D.hotK ? "<span>Dia quente: menos potência</span>" : "", D.water ? "<span>Rio 4 m acima do normal</span>" : ""].join("");
   $("brGoals").innerHTML = D.goals.map(g => "<li>" + g + "</li>").join(""); $("brTips").innerHTML = D.tips.map(g => "<li>" + g + "</li>").join("");
   show("brief"); gameState = "briefing"; document.body.classList.remove("fly");
-  CAM.focus = FOCUS[D.id] ? FOCUS[D.id]() : null; CAM.attractT = 0;
+  CAM.focus = FOCUS[D.id] ? FOCUS[D.id]() : (D.focus ? D.focus() : null); CAM.attractT = 0;
   if (M && M.props) { M.props.forEach(o => scene.remove(o)); M.props = null; }
   systemsReset(); heli.done = true; heli.rpm = 0;
   if (D.id === "boiada") herdInit(36, 640, 1730, 62, 11); else if (D.herd) herdInit(D.herd[0], D.herd[1], D.herd[2], D.herd[3], 5);
@@ -2889,7 +3589,7 @@ function startMission() {
   applyAmbience(D);
   env = newEnv({ windBase: (D.wind.kt || 0) * KT, gustSigma: (D.wind.gust || 0) * KT, fromDeg: D.wind.from, hotK: D.hotK || 1 });
   const s = SITES[D.startAt || "base"];
-  heli = newHeli({ x: s.x, z: s.z, y: s.y + CG_GROUND, ter: s.y, yaw: D.startAt === "pousada" ? Math.atan2(-720, -470) : 0 }); heli.baseK = 1;
+  heli = newHeli({ x: s.x, z: s.z, y: s.y + CG_GROUND, ter: s.y, yaw: D.startAt === "pousada" ? Math.atan2(-720, -470) : s.city ? CITY.rot : 0 }); heli.baseK = 1;
   M = { t: 0, marks: [], holdFrac: 0 };
   if (D.herd) herdInit(D.herd[0], D.herd[1], D.herd[2], D.herd[3], 5);
   D.setup(M);
@@ -3010,6 +3710,7 @@ function boot() {
       $("oTilt").onclick = () => { enableTiltControl(!tiltEnabled); setTimeout(refreshOpts, 300); };
       const ped = () => { save.opt.autoPedal = !save.opt.autoPedal; persist(); pedal = 0; refreshOpts(); syncPads(); }; $("oPed").onclick = ped; $("paPed").onclick = ped;
       const gfx = () => { cycleQuality(); refreshOpts(); }; $("oGfx").onclick = gfx; $("paGfx").onclick = gfx;
+      const sim = () => { save.opt.sim = !save.opt.sim; persist(); refreshOpts(); }; $("oSim").onclick = sim; $("paSim").onclick = sim;
       const snd = () => { save.opt.sound = !save.opt.sound; persist(); sfx.ensure(); refreshOpts(); }; $("oSnd").onclick = snd; $("paSnd").onclick = snd;
       $("brBack").onclick = toMenu; $("brGo").onclick = startMission;
       $("paGo").onclick = () => togglePause(false); $("paRestart").onclick = startMission; $("paMenu").onclick = toMenu;
