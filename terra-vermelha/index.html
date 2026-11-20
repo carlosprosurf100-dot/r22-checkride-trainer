@@ -73,9 +73,9 @@ body:not(.touch) #bAct{right:24px;bottom:24px;}
 .chip.on{border-color:var(--green);background:rgba(142,224,106,.2);}
 .opts .st{font-size:11.5px;color:var(--gold);font-weight:700;margin-left:6px;}
 .sheet-wrap{align-items:center;justify-content:center;padding:14px;background:rgba(24,11,5,.5);}
-#brief{align-items:flex-end;justify-content:flex-start;padding:14px;background:linear-gradient(0deg,rgba(24,11,5,.78) 0%,rgba(24,11,5,.1) 70%);}
+#brief{align-items:flex-start;justify-content:flex-start;padding:14px;background:linear-gradient(0deg,rgba(24,11,5,.78) 0%,rgba(24,11,5,.1) 70%);}
 .sheet{width:100%;max-width:560px;background:rgba(30,17,10,.86);border:1px solid var(--line);border-radius:18px;padding:18px 18px 16px;backdrop-filter:blur(7px);box-shadow:0 20px 60px rgba(0,0,0,.5);margin:auto;}
-#brief .sheet{margin:0;max-width:620px;}
+#brief .sheet{margin:auto 0 0 0;max-width:620px;}
 .sheet h2{font-family:var(--slab);margin:2px 0 4px;font-size:24px;line-height:1.1;}
 .sheet .k{font-size:10px;font-weight:800;letter-spacing:.2em;color:var(--gold);text-transform:uppercase;}
 .sheet p{font-size:13px;line-height:1.5;color:var(--dim);margin:8px 0;}
@@ -116,7 +116,7 @@ table.res{width:100%;border-collapse:collapse;margin:10px 0 2px;font-size:13px;}
   <div class="brand">
     <div class="t1">TERRA</div><div class="t2">VERMELHA</div>
     <div class="t3">Piloto de fazenda · Robinson R22 · <span id="ver"></span></div>
-    <div class="t4">Chapada, cânion, pantanal, uma fazenda inteira para cuidar do alto e uma cidade no fim da estrada. Treze trabalhos, rota sempre livre.</div>
+    <div class="t4">Chapada, cânion, pantanal, uma fazenda inteira para cuidar do alto, uma cidade no fim da estrada e uma escola de autorrotação. Dezenove trabalhos, rota sempre livre.</div>
   </div>
   <div>
     <div id="cards" class="cards"></div>
@@ -161,7 +161,7 @@ table.res{width:100%;border-collapse:collapse;margin:10px 0 2px;font-size:13px;}
    TERRA VERMELHA — piloto de fazenda no cerrado (Robinson R22)
    Núcleo: constantes da física, utilidades, ruído e estado global.
    ========================================================================= */
-const VERSION = "1.1";
+const VERSION = "1.2";
 
 // ---- Constantes físicas do R22 (as mesmas do Checkride Trainer) ----
 const KT = 0.514444, FT = 0.3048, MS2FPM = 196.85, G = 9.81, RHO = 1.225;
@@ -1088,6 +1088,7 @@ function stateVals() {
 function engToggle() {
   if (!heli || heli.crashed) return;
   if (engineOn) { engineOn = false; toast("Motor cortado — baixe o coletivo: autorrotação", "warn", 4); }
+  else if (M && M.dead) toast("O motor não religa: nesta missão a pane vai até o chão", "bad", 3);
   else if (heli.rpm > 60 || heli.onGround) { engineOn = true; toast("Motor religado", "ok", 3); }
   else toast("Não religa: RPM do rotor baixo demais", "bad", 3);
 }
@@ -3189,6 +3190,287 @@ MISSIONS.splice(MISSIONS.length - 1, 0, ...CITY_MISSIONS);
 STAMP_KEYS.push("heliporto", "praca", "estadio", "hospital", "torre");
 
 /* =========================================================================
+   AUTORROTAÇÃO — três aulas na pista da fazenda (com instrutor, nota e repetição na hora) e
+   três panes de verdade (planeio longo, pouso forçado no pantanal e pane sobre a cidade).
+
+   Números do planeio deste R22, medidos no próprio jogo: a 65 nós e rotor a 101% ele desce a
+   uns 2.150 pés/min e anda 3,2 m para cada metro de altura; a 75 nós com o rotor a 92% anda 3,5.
+   O flare precisa começar perto de 85 pés.
+   ========================================================================= */
+const AT = { col: 0.373, pitch: -0.06 };      // coletivo e atitude de voo nivelado a 65 nós
+
+// põe o helicóptero já voando (as aulas começam no ar) ou parado num ponto do chão
+function airStart(o) {
+  engineOn = true;
+  heli = newHeli(Object.assign({ onGround: false, rpm: 104, tacEng: 104, pitch: AT.pitch, airT: 5, vi: 3 }, o));
+  heli.baseK = o.baseK || 1; heli.massK = heli.baseK;
+  collective = o.col === undefined ? AT.col : o.col; cyclic = 0; cyclicLat = 0; pedal = 0; shake = 0; physAcc = 0;
+  CAM.yaw = heli.yaw; if (tiltEnabled) calibrateTilt(); syncPads();
+}
+function groundStart(x, z, y, yaw) {
+  engineOn = true; heli = newHeli({ x, z, y: y + CG_GROUND, ter: y, yaw }); heli.baseK = 1;
+  collective = 0.28; cyclic = 0; cyclicLat = 0; pedal = 0; shake = 0; physAcc = 0; CAM.yaw = yaw; if (tiltEnabled) calibrateTilt(); syncPads();
+}
+function autoCut(M, msg) {
+  engineOn = false; M.cut = true; M.dead = true; M.cutT = 0; M.yaw0 = heli.yaw; M.x0 = heli.x; M.z0 = heli.z; M.aglCut = stateVals().agl; M.tCut = tSim;
+  M.rpmMin = 200; M.rpmMax = 0; M.iasS = 0; M.iasN = 0; M.react = -1;
+  if (msg) toast(msg, "bad", 3.5); sfx.beep(240, 0.3, 0.3);
+}
+// acompanha o planeio depois do corte: reação, rotação mínima e máxima, velocidade média
+function autoTrack(M, dt, st, cues) {
+  if (!M.cut || heli.onGround) return;
+  M.cutT += dt;
+  if (M.react < 0 && collective < 0.15) M.react = M.cutT;
+  if (M.cutT > 4 && st.agl > 100) { M.rpmMin = Math.min(M.rpmMin, heli.rpm); M.rpmMax = Math.max(M.rpmMax, heli.rpm); M.iasS += st.ias; M.iasN++; }
+  if (cues && M.cutT > 3) {
+    M.said = M.said || {};
+    if (!M.said.fl && st.agl < 95) { M.said.fl = 1; toast("FLARE: nariz para cima!", "warn", 2.2); sfx.beep(660, 0.1, 0.2); }
+    if (!M.said.lv && M.said.fl && st.agl < 14) { M.said.lv = 1; toast("Nivele e amorteça com o coletivo", "warn", 2.5); }
+  }
+}
+// nota de 0 a 100 de uma autorrotação com planeio
+function gradeGlide(M, td, o) {
+  const d = o && o.tx !== undefined ? Math.hypot(td.x - o.tx, td.z - o.tz) : null, far = (o && o.far) || 150;
+  const pV = 35 * clamp(1 - (td.vsi - 150) / 400, 0, 1), pG = 20 * clamp(1 - (td.gs - 12) / 22, 0, 1), pD = d === null ? 30 : 30 * clamp(1 - (d - 12) / (far - 12), 0, 1);
+  const lo = M.rpmMin > 150 ? 100 : M.rpmMin, hi = M.rpmMax || 100, ias = M.iasN ? M.iasS / M.iasN : 65;
+  const pR = 15 * clamp(1 - Math.max(0, 95 - lo) / 10, 0, 1) * clamp(1 - Math.max(0, hi - 107) / 5, 0, 1);
+  let hint = "Autorrotação de livro.";
+  if (lo < 92) hint = "Rotor caiu a " + fmt(lo) + "%: coletivo embaixo assim que o motor parar.";
+  else if (hi > 107.5) hint = "Rotor foi a " + fmt(hi) + "%: segure a rotação com um pouco de coletivo.";
+  else if (td.vsi > 300) hint = "Toque duro (" + fmt(td.vsi) + " pés/min): flare mais cedo, amorteça no fim.";
+  else if (td.gs > 24) hint = "Tocou a " + fmt(td.gs) + " nós: flare mais firme e mais longo.";
+  else if (d !== null && d > 60) { const along = o.ax !== undefined ? (td.x - o.tx) * o.ax + (td.z - o.tz) * o.az : 0; hint = "Ficou " + fmt(d) + " m " + (along < -20 ? "antes do ponto: planeio devagar não estica." : along > 20 ? "depois do ponto: curvas em S ou mais velocidade." : "de lado do ponto: alinhe antes do flare."); }
+  else if (Math.abs(ias - (o && o.ias || 65)) > 8) hint = "Planeio a " + fmt(ias) + " nós: o R22 pede 65.";
+  const pts = Math.round(pV + pG + pD + pR);
+  if (hint === "Autorrotação de livro." && pts < 88) hint = "Sem erro grave. Para a nota máxima: toque mais macio e mais lento.";
+  return { pts, d, vsi: td.vsi, gs: td.gs, lo, hi, ias, hint };
+}
+// nota do corte no pairado: toque, proa e deriva
+function gradeHover(M, td, E) {
+  const dy = Math.abs(r2d(wrapPi(heli.yaw - M.yaw0))), dx = td.x - M.x0, dz = td.z - M.z0;
+  const lat = E.taxi ? Math.abs(-dx * Math.sin(M.yaw0) + dz * Math.cos(M.yaw0)) : Math.hypot(dx, dz);
+  const pV = 45 * clamp(1 - (td.vsi - 120) / 380, 0, 1), pY = 30 * clamp(1 - (dy - 8) / 37, 0, 1), pL = 25 * clamp(1 - (lat - 1) / 5, 0, 1);
+  let hint = "Assentou reto e macio.";
+  if (dy > 20) hint = "O nariz girou " + fmt(dy) + "°: sem motor, pedal direito no corte.";
+  else if (td.vsi > 300) hint = "Caiu duro (" + fmt(td.vsi) + " pés/min): puxe o coletivo só no fim.";
+  else if (lat > 2.5) hint = "Derivou " + fmt(lat, 1) + " m: segure a posição no cíclico.";
+  const pts = Math.round(pV + pY + pL);
+  if (hint === "Assentou reto e macio." && pts < 88) hint = "Reto, mas dá para amortecer mais: coletivo no fim, de uma vez.";
+  return { pts, vsi: td.vsi, gs: td.gs, dy, lat, hover: true, hint };
+}
+
+/* ---------------- motor das aulas: exercício, corte, nota, próximo ---------------- */
+const LESSON = {
+  start(M) {
+    const E = M.exs[M.k];
+    Object.assign(M, { cut: false, dead: false, cutT: 0, lastTd: null, said: {}, phase: "fly", pt: 0, hv: 0, need: 2.2 + Math.random() * 1.8 });
+    if (E.wind) env = newEnv({ windBase: E.wind[0] * KT, fromDeg: E.wind[1], hotK: 1 });
+    E.spawn(M, E);
+    toast("Exercício " + (M.k + 1) + " de " + M.exs.length + ": " + E.name, "ok", 3.6);
+  },
+  update(M, dt, st) {
+    const E = M.exs[M.k]; M.pt += dt;
+    if (M.phase === "crash") { if (M.pt > 2.8) LESSON.start(M); return; }
+    if (M.phase === "td") {
+      if (M.pt > 5.5) { if (M.k >= M.exs.length - 1) { M.phase = "end"; const a = LESSON.avg(M); missionEnd(true, "Aula encerrada. Média " + a + " em 100" + (M.crashes ? ", com " + M.crashes + " repetição(ões) por acidente." : ".")); } else { M.k++; LESSON.start(M); } }
+      return;
+    }
+    if (M.phase !== "fly") return;
+    if (!M.cut) { if (E.cutWhen(M, st, dt, E)) autoCut(M); return; }
+    autoTrack(M, dt, st, !E.hover);
+    if (heli.onGround && Math.hypot(heli.vx, heli.vz) < 0.5 && M.lastTd && M.lastTd.t >= M.tCut) {
+      const g = E.hover ? gradeHover(M, M.lastTd, E) : gradeGlide(M, M.lastTd, E);
+      M.res[M.k] = g; M.phase = "td"; M.pt = 0; sfx.chime();
+      toast("Nota " + g.pts + " em 100", g.pts >= 65 ? "ok" : "warn", 5); toast("Instrutor: " + g.hint, "warn", 6);
+    }
+  },
+  crash(M, reason) {
+    if (M.phase !== "fly") return true;
+    M.crashes++; M.phase = "crash"; M.pt = 0; toast("Instrutor: " + reason + ". De novo.", "bad", 4.5);
+    return true;        // a aula não acaba no acidente: repete o mesmo exercício
+  },
+  avg(M) { const r = M.res.filter(Boolean); return r.length ? Math.round(r.reduce((a, b) => a + b.pts, 0) / r.length) : 0; },
+  rows(M) {
+    const rows = M.exs.map((E, i) => { const g = M.res[i]; return [E.short, g ? g.pts + " pts · " + (g.hover ? fmt(g.vsi) + " pés/min, proa " + fmt(g.dy) + "°" : fmt(g.vsi) + " pés/min, " + fmt(g.gs) + " kt" + (g.d !== null ? ", " + fmt(g.d) + " m do ponto" : "")) : "não feito"]; });
+    return rows.concat([["Média", LESSON.avg(M) + " em 100"], ["Repetições por acidente", "" + M.crashes], ["Ouro", "média 85, sem acidente"], ["Prata", "média 65"]]);
+  },
+  medal(M) { const a = LESSON.avg(M); return a >= 85 && !M.crashes ? 3 : a >= 65 ? 2 : 1; },
+  hud(M) {
+    const E = M.exs[M.k], g = M.res[M.k], prog = [M.res.filter(Boolean).length, M.exs.length];
+    if (M.phase === "td" && g) return { obj: "Nota " + g.pts + " em 100", sub: M.k >= M.exs.length - 1 ? "Fim da aula" : "O próximo exercício já vem", prog };
+    if (M.phase === "crash") return { obj: "De novo: " + E.short, sub: "O instrutor recoloca o helicóptero", prog };
+    if (!M.cut) return { obj: E.short, sub: E.waitTxt(M, E), prog };
+    return { obj: "MOTOR CORTADO", sub: E.hover ? "Pedal direito · deixe assentar · amorteça no fim" : "Coletivo embaixo · 65 nós · rotor no verde · flare a 85 pés", prog, info: "Rotor " + fmt(heli.rpm) + "%" + (E.tx !== undefined ? " · ponto a " + fmt(Math.hypot(heli.x - E.tx, heli.z - E.tz)) + " m" : "") };
+  }
+};
+// alvo das aulas: ponto de toque na pista da fazenda, pousando para o leste
+function stripTarget() { const s = SITES.strip; return { x: s.x - 120, z: s.z, y: s.y }; }
+// distância que o R22 anda do corte ao toque, sem vento, e o tempo que leva (medidos)
+const glideDist = ft => 757 + (ft - 700) * 0.93, glideTime = ft => 8.5 + ft * FT / 10.9;
+
+const AUTO_MISSIONS = [
+  /* aula 1 --------------------------------------------------------------- */
+  {
+    id: "apairado", auto: true, name: "Aula 1: corte no pairado", tag: "Aula com instrutor", tod: "morning", wind: { kt: 3, from: 90 }, startAt: "strip",
+    blurb: "O instrutor fecha a manete quando você menos espera, a poucos pés do chão. Três cortes: a 3 pés, a 6 pés e em táxi.",
+    desc: "Você está na pista da fazenda com o instrutor ao lado. Tire do chão e fique parado na altura pedida; quando o pairado estiver firme, ele corta o motor sem avisar. Sem motor o torque some e o nariz foge para a esquerda: pedal direito. Deixe o helicóptero assentar e amorteça com o coletivo só no fim. Se quebrar, o exercício se repete na hora.",
+    goals: ["Corte a 3 pés: pairar parado entre 2 e 5 pés", "Corte a 6 pés: pairar parado entre 5 e 8 pés", "Corte em táxi: andar para a frente a 8–15 nós, entre 3 e 8 pés"],
+    tips: ["Não baixe o coletivo no corte do pairado: segure onde está e puxe quando o chão chegar.", "Com pedais automáticos o jogo cuida da proa; desligue-os para treinar o pedal direito.", "No táxi, toque reto e deixe correr no esqui. Não puxe o cíclico para trás no chão."],
+    focus: () => { const t = stripTarget(); return { x: t.x, y: t.y, z: t.z, r: 150, h: 40 }; },
+    setup(M) {
+      const sp = (M2, E) => { const t = stripTarget(); groundStart(t.x - (E.taxi ? 200 : 0), t.z, t.y, 0); };
+      const cw = (M2, st, dt, E) => { const ok = !heli.onGround && st.aglM >= E.lo && st.aglM <= E.hi && (E.taxi ? st.gs >= 8 && st.gs <= 15 : st.gs < 3); M2.hv = ok ? M2.hv + dt : Math.max(0, M2.hv - dt * 2); return M2.hv >= M2.need; };
+      const wt = (M2, E) => E.taxi ? "Ande reto a 8–15 nós, entre 3 e 8 pés" : "Paire parado entre " + E.band + " pés. O corte vem sem aviso";
+      M.exs = [{ name: "corte no pairado a 3 pés", short: "Pairado a 3 pés", lo: 0.55, hi: 1.6, band: "2 e 5" }, { name: "corte no pairado a 6 pés", short: "Pairado a 6 pés", lo: 1.4, hi: 2.6, band: "5 e 8" }, { name: "corte em táxi, a 8–15 nós", short: "Corte em táxi", lo: 0.9, hi: 2.5, taxi: true }]
+        .map(E => Object.assign(E, { hover: true, spawn: sp, cutWhen: cw, waitTxt: wt }));
+      M.engMsg = "MOTOR CORTADO — PEDAL DIREITO, AMORTEÇA NO FIM"; M.k = 0; M.res = []; M.crashes = 0; LESSON.start(M);
+    },
+    touch(M, td) { M.lastTd = td; },
+    onCrash(M, reason) { return LESSON.crash(M, reason); },
+    update(M, dt, st) { LESSON.update(M, dt, st); },
+    hud(M) { return LESSON.hud(M); },
+    markers(M) { return []; },
+    result(M) { return { medal: LESSON.medal(M), rows: LESSON.rows(M) }; }
+  },
+  /* aula 2 --------------------------------------------------------------- */
+  {
+    id: "adireta", auto: true, name: "Aula 2: autorrotação direta", tag: "Aula com instrutor", tod: "morning", wind: { kt: 6, from: 90 }, startAt: "strip",
+    blurb: "Na reta final da pista, a 65 nós, o instrutor corta o motor. Coletivo embaixo, rotor no verde, flare e toque no ponto marcado. Três vezes.",
+    desc: "Cada exercício começa em voo, alinhado com a pista. O instrutor corta o motor num ponto calculado para um planeio a 65 nós terminar no anel da pista. Coletivo embaixo na hora, 65 nós no cíclico, rotor entre 97 e 104%. Perto de 85 pés, flare: nariz para cima. Nivele a uns 10 pés e amorteça com o coletivo. Se quebrar, o exercício se repete.",
+    goals: ["De 700 pés, com vento de frente de 6 nós", "De 500 pés, sem vento (tudo acontece mais rápido)", "De 900 pés, com vento de través de 8 nós", "Nota: toque macio, pouca velocidade, perto do anel e rotor no verde"],
+    tips: ["Este R22 desce a mais de 2.000 pés por minuto sem motor: o chão chega depressa. O instrutor grita o flare.", "Rotor passando de 104%: um pouco de coletivo. Caindo de 97%: coletivo embaixo.", "Vai passar do ponto? Curvas em S ou um pouco mais de velocidade. Vai ficar curto? Não há o que esticar: aceite e pouse antes.", "No painel de simulador você vê os ponteiros de motor e rotor se separarem no corte."],
+    focus: () => { const t = stripTarget(); return { x: t.x, y: t.y, z: t.z, r: 300, h: 90 }; },
+    setup(M) {
+      const sp = (M2, E) => { const t = stripTarget(), hw = E.head || 0, D = glideDist(E.ft) - hw * KT * glideTime(E.ft); E.tx = t.x; E.tz = t.z; E.xCut = t.x - D; airStart({ x: E.xCut - 5.5 * (65 - hw) * KT, z: t.z, y: t.y + CG_GROUND + E.ft * FT, yaw: 0, vx: (65 - hw) * KT, vz: 0 }); };
+      const cw = (M2, st, dt, E) => heli.x >= E.xCut || M2.pt > 9;
+      const wt = (M2, E) => "Segure 65 nós e a altura. Corte em " + fmt(Math.max(0, (E.xCut - heli.x) / Math.max(5, heli.vx))) + " s";
+      M.exs = [{ name: "direta de 700 pés, vento de frente de 6 nós", short: "Direta de 700 pés", ft: 700, wind: [6, 90], head: 6 }, { name: "direta de 500 pés, sem vento", short: "Direta de 500 pés", ft: 500, wind: [0, 90] }, { name: "direta de 900 pés, vento de través de 8 nós", short: "Direta de 900 pés, través", ft: 900, wind: [8, 180] }]
+        .map(E => Object.assign(E, { spawn: sp, cutWhen: cw, waitTxt: wt, far: 150, ax: 1, az: 0 }));
+      M.k = 0; M.res = []; M.crashes = 0; LESSON.start(M);
+    },
+    touch(M, td) { M.lastTd = td; },
+    onCrash(M, reason) { return LESSON.crash(M, reason); },
+    update(M, dt, st) { LESSON.update(M, dt, st); },
+    hud(M) { return LESSON.hud(M); },
+    markers(M) { const t = stripTarget(); return [{ x: t.x, y: t.y, z: t.z, label: "Ponto de toque", r: 12, tall: 60 }]; },
+    result(M) { return { medal: LESSON.medal(M), rows: LESSON.rows(M) }; }
+  },
+  /* aula 3 --------------------------------------------------------------- */
+  {
+    id: "a180", auto: true, name: "Aula 3: autorrotação em 180°", tag: "Aula com instrutor", tod: "noon", wind: { kt: 0, from: 90 }, startAt: "strip",
+    blurb: "Na perna do vento, a 700 pés, o motor é cortado logo depois de você passar ao lado do ponto de toque. Meia-volta planando e pouso no anel: a manobra mais difícil do curso.",
+    desc: "Você voa paralelo à pista, no sentido contrário ao do pouso, com o anel de toque de lado. O instrutor corta o motor um pouco depois de você passar por ele. Coletivo embaixo, 65 nós, e uma curva contínua de 180° com uns 40° de inclinação, saindo alinhado com a pista já perto do flare. Na curva o rotor acelera e o helicóptero afunda mais: controle a rotação com o coletivo.",
+    goals: ["180° pela direita, de 700 pés", "180° pela esquerda, de 700 pés", "180° pela direita, com vento de 8 nós de frente na final"],
+    tips: ["Olhe para o anel durante toda a curva: é ele que diz se você aperta ou abre.", "Curva apertada demais afunda; curva aberta demais passa do ponto. Ajuste a inclinação, não a velocidade.", "Chegue nivelado de asas antes do flare: flare inclinado é capotagem."],
+    focus: () => { const t = stripTarget(); return { x: t.x, y: t.y, z: t.z, r: 420, h: 150 }; },
+    setup(M) {
+      const sp = (M2, E) => { const t = stripTarget(), hw = E.head || 0; E.tx = t.x; E.tz = t.z; E.xCut = t.x - E.lead + hw * KT * 16; airStart({ x: E.xCut + 6 * (65 + hw) * KT, z: t.z + E.side * E.off, y: t.y + CG_GROUND + E.ft * FT, yaw: Math.PI, vx: -(65 + hw) * KT, vz: 0 }); };
+      const cw = (M2, st, dt, E) => heli.x <= E.xCut || M2.pt > 10;
+      const wt = (M2, E) => "Perna do vento a 65 nós. Corte em " + fmt(Math.max(0, (heli.x - E.xCut) / Math.max(5, -heli.vx))) + " s, curva pela " + (E.side > 0 ? "direita" : "esquerda");
+      M.exs = [{ name: "180° pela direita, de 700 pés", short: "180° pela direita", side: 1, wind: [0, 90] }, { name: "180° pela esquerda, de 700 pés", short: "180° pela esquerda", side: -1, wind: [0, 90] }, { name: "180° pela direita, vento de 8 nós na final", short: "180° com vento", side: 1, wind: [8, 90], head: 8 }]
+        .map(E => Object.assign(E, { ft: 700, off: 330, lead: 200, spawn: sp, cutWhen: cw, waitTxt: wt, far: 180, ax: 1, az: 0 }));
+      M.k = 0; M.res = []; M.crashes = 0; LESSON.start(M);
+    },
+    touch(M, td) { M.lastTd = td; },
+    onCrash(M, reason) { return LESSON.crash(M, reason); },
+    update(M, dt, st) { LESSON.update(M, dt, st); },
+    hud(M) { return LESSON.hud(M); },
+    markers(M) { const t = stripTarget(); return [{ x: t.x, y: t.y, z: t.z, label: "Ponto de toque", r: 12, tall: 60 }]; },
+    result(M) { return { medal: LESSON.medal(M), rows: LESSON.rows(M) }; }
+  },
+  /* pane 1: planeio longo ------------------------------------------------- */
+  {
+    id: "planeio", auto: true, name: "Planeio da chapada", tag: "Pane de verdade", tod: "morning", wind: { kt: 4, from: 320 }, startAt: "base",
+    blurb: "Voltando do alto da chapada, o motor para de vez. A pista da fazenda está no limite do planeio: só chega quem voa na velocidade e na rotação certas.",
+    desc: "Você cruza a chapada a caminho da fazenda quando o motor para, sem aviso e sem volta. A pista está a quase 3 km. A 65 nós você fica uns 100 metros curto; o R22 plana mais longe a 75 nós com o rotor baixo, perto de 90–95%. Segure isso até a pista estar garantida, depois volte para 65 nós e rotor no verde antes do flare. Não há segunda chance: aqui acidente encerra o voo.",
+    goals: ["Pousar sem quebrar depois da pane", "Prata: pousar na área limpa da pista · Ouro: dentro da pista, a menos de 300 pés/min"],
+    tips: ["Planeio máximo: 75 nós e rotor em 90–95% (um pouco de coletivo segura a rotação lá embaixo).", "Rotor abaixo de 90% perto do chão é flare sem força: suba a rotação para o verde antes dos 300 pés.", "Não deu para chegar? Estrada e pasto limpo servem. Árvore não."],
+    focus: () => { const s = SITES.strip; return { x: s.x + ESC.nx * 1700, y: 200, z: s.z + ESC.nz * 1700, r: 900, h: 420 }; },
+    setup(M) {
+      const s = SITES.strip, D0 = 3600;
+      airStart({ x: s.x + ESC.nx * D0, z: s.z + ESC.nz * D0, y: 760, yaw: Math.atan2(-ESC.nz, -ESC.nx), vx: -ESC.nx * 70 * KT, vz: -ESC.nz * 70 * KT, col: 0.39 });
+      Object.assign(M, { cut: false, dead: false, cutT: 0, lastTd: null });
+      toast("Cruzeiro a 70 nós, de volta para a fazenda. Pista a " + fmt(D0 / 1000, 1) + " km.", "ok", 6);
+    },
+    touch(M, td) { M.lastTd = td; },
+    update(M, dt, st) {
+      const s = SITES.strip, d = Math.hypot(heli.x - s.x, heli.z - s.z), H = heli.y - CG_GROUND - s.y;
+      if (!M.cut) { if ((M.t > 9 && d <= 3.75 * H) || M.t > 70) autoCut(M, "O MOTOR PAROU — pane de verdade!"); return; }
+      autoTrack(M, dt, st, false);
+      if (heli.onGround && Math.hypot(heli.vx, heli.vz) < 0.5 && M.lastTd) {
+        const td = M.lastTd, ex = Math.max(0, Math.abs(td.x - s.x) - s.len / 2), ez = Math.max(0, Math.abs(td.z - s.z) - (s.wid / 2 + 2)); M.off = Math.hypot(ex, ez); M.g = gradeGlide(M, td, null);
+        missionEnd(true, M.off < 0.5 ? "Na pista, sem motor, de quase 3 km de distância. Planeio de mestre." : M.off < 60 ? "Pouso na área limpa da pista, a " + fmt(M.off) + " m dela." : "Pouso forçado a " + fmt(M.off) + " m da pista. Inteiro, que é o que importa.");
+      }
+    },
+    hud(M) {
+      const s = SITES.strip, d = Math.hypot(heli.x - s.x, heli.z - s.z);
+      return M.cut ? { obj: "PANE: plane até a pista", sub: "75 nós e rotor em 90–95% para ir mais longe", timer: M.cutT, info: "Rotor " + fmt(heli.rpm) + "% · pista a " + fmt(d) + " m" } : { obj: "Volte para a fazenda", sub: "Cruzeiro a 70 nós, rumo à pista", info: "Pista a " + fmt(d / 1000, 1) + " km" };
+    },
+    markers(M) { const s = SITES.strip; return [{ x: s.x, y: s.y, z: s.z, label: "Pista da Fazenda", r: 17, tall: 120 }]; },
+    result(M) {
+      const g = M.g || { vsi: 0, gs: 0, lo: 0, hi: 0, hint: "" }, off = M.off === undefined ? 999 : M.off;
+      return { medal: off < 0.5 && g.vsi <= 300 ? 3 : off < 60 ? 2 : 1, rows: [["Distância da pista", off < 0.5 ? "dentro dela" : fmt(off) + " m"], ["Toque", fmt(g.vsi) + " pés/min a " + fmt(g.gs) + " kt"], ["Rotor no planeio", fmt(g.lo) + " a " + fmt(g.hi) + "%"], ["Altura na pane", fmt(M.aglCut || 0) + " pés"], ["Ouro", "dentro da pista, até 300 pés/min"], ["Prata", "na área limpa (até 60 m)"]] };
+    }
+  },
+  /* pane 2: pouso forçado -------------------------------------------------- */
+  {
+    id: "pane", auto: true, name: "Pane no pantanal", tag: "Pane de verdade", tod: "golden", wind: { kt: 6, from: 250 }, startAt: "camp", herd: [18, 640, 1730, 70],
+    blurb: "Do acampamento para a fazenda, por cima de mata, lagoa e brejo. Em algum ponto do caminho o motor para. Onde, ninguém sabe: altura é tempo.",
+    desc: "Decole do Acampamento da Onça e siga para a fazenda, 3,5 km a oeste. A pane vem em algum momento do voo, sem aviso. Escolha um lugar seco e limpo enquanto ainda tem altura, e pouse. Quem voa baixo sobre a mata não tem para onde ir; quem voa alto escolhe.",
+    goals: ["Pousar sem quebrar depois da pane (água e árvore não valem)", "Prata: toque até 400 pés/min · Ouro: até 250 pés/min e 15 nós"],
+    tips: ["Voe de olho no chão: sempre com um lugar de pouso ao alcance.", "A 500 pés você tem uns 14 segundos e 450 metros de alcance. A 1.000 pés, o dobro.", "Capim claro é seco; verde-escuro perto de lagoa é brejo."],
+    focus: () => ({ x: 2300, y: 3, z: 1700, r: 700, h: 180 }),
+    setup(M) { Object.assign(M, { cut: false, dead: false, cutT: 0, lastTd: null, air: 0, tf: 36 + Math.random() * 30 }); },
+    touch(M, td) { M.lastTd = td; },
+    update(M, dt, st) {
+      const c = SITES.camp, b = SITES.base;
+      if (!M.cut) {
+        if (!heli.onGround && st.agl > 30) M.air += dt;
+        const dc = Math.hypot(heli.x - c.x, heli.z - c.z), db = Math.hypot(heli.x - b.x, heli.z - b.z);
+        if (!heli.onGround && ((M.air >= M.tf && dc > 450) || (db < 1500 && dc > 450))) autoCut(M, "O MOTOR PAROU — pane de verdade!");
+        return;
+      }
+      autoTrack(M, dt, st, false);
+      if (heli.onGround && Math.hypot(heli.vx, heli.vz) < 0.5 && M.lastTd) { M.g = gradeGlide(M, M.lastTd, null); missionEnd(true, "Pouso forçado sem danos. O resgate vem de caminhão; as amostras chegam amanhã."); }
+    },
+    hud(M) { const b = SITES.base; return M.cut ? { obj: "PANE: escolha um lugar e pouse", sub: "Seco, limpo e ao alcance. Coletivo embaixo, 65 nós", timer: M.cutT, info: "Rotor " + fmt(heli.rpm) + "%" } : { obj: "Leve as amostras à fazenda", sub: "3,5 km a oeste. Sempre com um pouso ao alcance", info: "Fazenda a " + fmt(Math.hypot(heli.x - b.x, heli.z - b.z) / 1000, 1) + " km" }; },
+    markers(M) { const b = SITES.base; return M.cut ? [] : [{ x: b.x, y: b.y, z: b.z, label: "Fazenda", hidden: true }]; },
+    result(M) { const g = M.g || { vsi: 999, gs: 99, lo: 0, hi: 0 }; return { medal: g.vsi <= 250 && g.gs <= 15 ? 3 : g.vsi <= 400 ? 2 : 1, rows: [["Altura na hora da pane", fmt(M.aglCut || 0) + " pés"], ["Toque", fmt(g.vsi) + " pés/min a " + fmt(g.gs) + " kt"], ["Rotor no planeio", fmt(g.lo) + " a " + fmt(g.hi) + "%"], ["Tempo de reação no coletivo", M.react >= 0 ? fmt(M.react, 1) + " s" : "não baixou"], ["Ouro", "até 250 pés/min e 15 kt"], ["Prata", "até 400 pés/min"]] }; }
+  },
+  /* pane 3: sobre a cidade ------------------------------------------------- */
+  {
+    id: "panecidade", auto: true, city: true, name: "Pane sobre a cidade", tag: "Pane de verdade", tod: "noon", wind: { kt: 5, from: 100 }, startAt: "heliporto",
+    blurb: "Voo panorâmico com passageiro sobre São Bento, a 900 pés. O motor para em cima dos prédios. Estádio, praça, heliporto, parque: escolha rápido.",
+    desc: "Você entra na cidade pela avenida, a 900 pés, com um passageiro a bordo. A pane vem sobre os prédios. Com o peso extra o helicóptero afunda mais e o rotor acelera mais: segure a rotação com o coletivo. Procure uma área aberta (gramado do estádio, praça, heliporto, parque) e pouse. Rua também serve: o trânsito para.",
+    goals: ["Pousar sem quebrar e sem encostar em prédio", "Ouro: numa área aberta (estádio, praça, heliporto ou parque), até 300 pés/min · Prata: qualquer pouso até 400 pés/min"],
+    tips: ["De 900 pés você alcança uns 800 metros: quase a cidade inteira, se decidir logo.", "Decidiu, não mude: trocar de alvo no meio do planeio é o erro que mata.", "O estádio tem arquibancada de 13 metros em volta: chegue alto e desça por dentro."],
+    focus: () => ({ x: CITY.x, y: 40, z: CITY.z, r: 620, h: 260 }),
+    setup(M) {
+      const p = cityW(-760, -6), c = CITY.c, s = CITY.s;
+      airStart({ x: p[0], z: p[1], y: CITY.y + CG_GROUND + 900 * FT, yaw: CITY.rot, vx: c * 70 * KT, vz: s * 70 * KT, col: 0.42, baseK: 1.12 });
+      Object.assign(M, { cut: false, dead: false, cutT: 0, lastTd: null, tf: 10 + Math.random() * 9 });
+      toast("Voo panorâmico: siga a avenida por cima da cidade, a 900 pés.", "ok", 6);
+    },
+    touch(M, td) { M.lastTd = td; },
+    update(M, dt, st) {
+      if (!M.cut) { if (M.t >= M.tf) autoCut(M, "O MOTOR PAROU — pane de verdade!"); return; }
+      autoTrack(M, dt, st, false);
+      if (heli.onGround && Math.hypot(heli.vx, heli.vz) < 0.5 && M.lastTd) {
+        const td = M.lastTd, l = cityL(td.x, td.z), gy = CITY.y + 0.1, low = Math.abs(td.y - gy) < 0.6, near = k => Math.hypot(td.x - SITES[k].x, td.z - SITES[k].z);
+        const roof = ["hospital", "hotel", "torre"].find(k => near(k) < SITES[k].pad + 3 && Math.abs(td.y - SITES[k].y) < 1);
+        M.zone = roof ? "num heliponto de cobertura (" + SITES[roof].name.replace(/ \(.*/, "") + ")" : low && Math.abs(l[0] - 288) < 53 && Math.abs(l[1] - 192) < 33 ? "no gramado do estádio" : low && near("praca") < 20 ? "na Praça da Matriz" : low && near("heliporto") < 30 ? "no heliporto" : low && l[0] > 13 && l[0] < 88 && l[1] > 200 && l[1] < 280 ? "no parque" : null;
+        M.where = M.zone || (!inCity(td.x, td.z) ? "fora da cidade" : low ? "no meio da rua" : "no teto de um prédio"); M.g = gradeGlide(M, td, null);
+        missionEnd(true, "Pouso " + M.where + ", sem motor. O passageiro vai precisar de um café.");
+      }
+    },
+    hud(M) { return M.cut ? { obj: "PANE: ache uma área aberta", sub: "Estádio, praça, heliporto, parque ou uma rua larga", timer: M.cutT, info: "Rotor " + fmt(heli.rpm) + "% · " + fmt(stateVals().agl) + " pés" } : { obj: "Voo panorâmico sobre a cidade", sub: "Siga a avenida a 900 pés e 70 nós" }; },
+    markers(M) { return []; },
+    result(M) { const g = M.g || { vsi: 999, gs: 99, lo: 0, hi: 0 }; return { medal: M.zone && g.vsi <= 300 ? 3 : g.vsi <= 400 ? 2 : 1, rows: [["Onde pousou", M.where || "—"], ["Toque", fmt(g.vsi) + " pés/min a " + fmt(g.gs) + " kt"], ["Rotor no planeio", fmt(g.lo) + " a " + fmt(g.hi) + "%"], ["Tempo de reação no coletivo", M.react >= 0 ? fmt(M.react, 1) + " s" : "não baixou"], ["Ouro", "área aberta, até 300 pés/min"], ["Prata", "até 400 pés/min"]] }; }
+  }
+];
+MISSIONS.splice(MISSIONS.length - 1, 0, ...AUTO_MISSIONS);
+
+/* =========================================================================
    PAINEL DE VOO (HUD) — desenhado em canvas 2D por cima do 3D.
    Bússola com o rumo do objetivo, velocidade, altura por radar, RPM do rotor, pressão de
    admissão (MAP), fio de lã (derrapagem), minimapa e os avisos.
@@ -3315,7 +3597,7 @@ function drawHud(dt, st) {
 
   // ---- avisos ----
   { let msg = null, col = COL.red; const blink = (performance.now() % 600) < 400;
-    if (!engineOn && !h.onGround) { msg = "MOTOR PARADO — COLETIVO EMBAIXO"; }
+    if (!engineOn && !h.onGround) { msg = M.engMsg || "MOTOR PARADO — COLETIVO EMBAIXO"; }
     else if (h.rpm < RPM_HORN && !h.onGround) msg = "ROTOR BAIXO — BAIXE O COLETIVO";
     else if (h.vrs > 0.25) msg = "ANEL DE VÓRTICE — CÍCLICO À FRENTE";
     else if (h.wideOpen && !h.onGround) { msg = "POTÊNCIA NO LIMITE"; col = COL.amber; }
@@ -3547,7 +3829,7 @@ const medalHtml = m => '<span class="md"><i class="' + (m >= 1 ? "b" : "") + '">
 
 function buildMenu() {
   $("ver").textContent = "versão " + VERSION;
-  $("cards").innerHTML = MISSIONS.map((m, i) => '<button class="mc" data-i="' + i + '"><div class="n"><span>' + (m.city ? 'NA CIDADE · ' : 'TRABALHO ') + (i + 1) + '</span>' + (m.id === "livre" ? "" : medalHtml(save.medals[m.id] || 0)) + '</div><div class="nm">' + m.name + '</div><div class="ds">' + m.blurb + '</div><span class="tg">' + m.tag + '</span></button>').join("");
+  $("cards").innerHTML = MISSIONS.map((m, i) => '<button class="mc" data-i="' + i + '"><div class="n"><span>' + (m.auto ? 'AUTORROTAÇÃO' : (m.city ? 'NA CIDADE · ' : 'TRABALHO ') + (i + 1)) + '</span>' + (m.id === "livre" ? "" : medalHtml(save.medals[m.id] || 0)) + '</div><div class="nm">' + m.name + '</div><div class="ds">' + m.blurb + '</div><span class="tg">' + m.tag + '</span></button>').join("");
   $("cards").querySelectorAll(".mc").forEach(b => { b.onclick = () => openBriefing(+b.dataset.i); });
   $("cards").onwheel = e => { $("cards").scrollLeft += e.deltaY; };
   refreshOpts();
@@ -3611,6 +3893,7 @@ function crash(reason) {
   heli.crashed = true; heli.vx = heli.vz = 0; shake = 14; sfx.crash(); engineOn = false;
   for (let i = 0; i < 40; i++) emit({ x: heli.x + (Math.random() - 0.5) * 3, y: heli.y, z: heli.z + (Math.random() - 0.5) * 3, vx: (Math.random() - 0.5) * 12, vy: 2 + Math.random() * 9, vz: (Math.random() - 0.5) * 12, life: 2.5 + Math.random() * 2, size: 3, grow: 5, drag: 1.2, r: 0.25, g: 0.22, b: 0.2, a: 0.6 });
   for (let i = 0; i < 24; i++) emit({ x: heli.x, y: heli.y, z: heli.z, vx: (Math.random() - 0.5) * 16, vy: 4 + Math.random() * 10, vz: (Math.random() - 0.5) * 16, life: 1 + Math.random(), size: 0.5, grav: 9, r: 1, g: 0.6, b: 0.2, a: 1, add: true });
+  if (mission && mission.onCrash && !heli.done && mission.onCrash(M, reason)) return;   // aula: repete o exercício em vez de encerrar
   missionEnd(false, reason);
 }
 function onTouchdown(td) {
