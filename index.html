@@ -237,7 +237,7 @@ body.startMode #colPad,body.startMode #cycPad,body.startMode #pedPad{display:non
 
 <div class="overlay" id="menu">
   <div class="card">
-    <h1>R22 Checkride Trainer 3D v15<small style="color:#35d17a">VERSÃO 15.2 · pedais na direita com acelerômetro</small><small>Física real · Cenário Rico & Referência de Altura · Robinson R22 Beta II</small></h1>
+    <h1>R22 Checkride Trainer 3D v15<small style="color:#35d17a">VERSÃO 15.3 · acelerômetro mais suave</small><small>Física real · Cenário Rico & Referência de Altura · Robinson R22 Beta II</small></h1>
     <p class="sub">Toque em qualquer missão abaixo para abrir o briefing ou inicie direto no botão rápido:</p>
     <div class="quickStartRow">
       <button class="act go" onclick="window._quickStart(1)">▶ DECOLAR AGORA (MISSÃO 01 — PAIRADO)</button>
@@ -361,7 +361,37 @@ function toggleBottomBar(force){
   if(btn) btn.textContent = bottomBarHidden ? "▲ MOSTRAR BOTÕES" : "▼ ESCONDER BOTÕES";
 }
 
+// Filtro adaptativo ("One Euro"): com o celular parado alisa forte e some o tremor do sensor;
+// quando a mão se move rápido, alisa pouco para não atrasar o comando.
+function makeTiltFilter(){
+  let x = null, dx = 0, t = 0;
+  const alpha = (fc, dt)=>{ const tau = 1/(2*Math.PI*fc); return 1/(1 + tau/dt); };
+  return {
+    reset(){ x = null; dx = 0; },
+    step(v, now){
+      if(x === null){ x = v; dx = 0; t = now; return v; }
+      const dt = clamp((now - t)/1000, 0.001, 0.25); t = now;
+      const d = (v - x)/dt;
+      dx += (d - dx)*alpha(1.0, dt);
+      x += (v - x)*alpha(1.6 + 0.075*Math.abs(dx), dt);
+      return x;
+    }
+  };
+}
+const tiltFiltP = makeTiltFilter(), tiltFiltR = makeTiltFilter();
+let tiltTgtCyc = 0, tiltTgtLat = 0;
+
+// Roda a cada quadro do jogo: leva o cíclico até o alvo do sensor de forma contínua,
+// mesmo que o sensor entregue leituras em ritmo irregular (era a causa dos "degraus").
+function applyTiltFrame(dt){
+  if(!tiltEnabled || gameState !== "flying" || paused) return;
+  const k = 1 - Math.exp(-dt/0.040);
+  cyclic    += (tiltTgtCyc - cyclic)*k;
+  cyclicLat += (tiltTgtLat - cyclicLat)*k;
+}
+
 function calibrateTilt(){
+  tiltFiltP.reset(); tiltFiltR.reset(); tiltTgtCyc = 0; tiltTgtLat = 0;
   tiltNeedsCalibration = true;
   if(tiltPacketsReceived > 0){
     tiltRefPitch = tiltRawPitch;
@@ -384,6 +414,7 @@ function handleOrientationInput(pitchDeg, rollDeg, srcName){
     tiltRefPitch = pitchDeg;
     tiltRefRoll  = rollDeg;
     tiltNeedsCalibration = false;
+    tiltFiltP.reset(); tiltFiltR.reset();
   }
   if(!tiltEnabled) return;
   // Diferença em graus relativa à postura em que o celular foi calibrado
@@ -391,20 +422,21 @@ function handleOrientationInput(pitchDeg, rollDeg, srcName){
   let dR = tiltRawRoll  - tiltRefRoll;
   if(dP > 180) dP -= 360; if(dP < -180) dP += 360;
   if(dR > 180) dR -= 360; if(dR < -180) dR += 360;
+  const nowT = performance.now();
+  dP = tiltFiltP.step(dP, nowT);
+  dR = tiltFiltR.step(dR, nowT);
   tiltDeltaPitch = dP;
   tiltDeltaRoll  = dR;
 
-  if(gameState!=="flying" || paused) return;
-  // Deadzone suave de 1.0° para estabilidade no pairado
-  let effP = Math.abs(dP) < 1.0 ? 0 : dP - Math.sign(dP)*1.0;
-  let effR = Math.abs(dR) < 1.0 ? 0 : dR - Math.sign(dR)*1.0;
-  // Inclinar topo do celular para FRENTE (afastar de você: dP < 0) => cyclic < 0 (nariz desce / vai p/ frente)
-  // Inclinar topo do celular para TRÁS (trazer p/ você: dP > 0) => cyclic > 0 (nariz sobe / flare)
-  // Inclinar celular para ESQUERDA (dR < 0) => cyclicLat < 0 | DIREITA (dR > 0) => cyclicLat > 0
-  const targetCyc = clamp(effP / 15, -1, 1);
-  const targetLat = clamp(effR / 16, -1, 1);
-  cyclic    = lerp(cyclic,    targetCyc, 0.35);
-  cyclicLat = lerp(cyclicLat, targetLat, 0.35);
+  // Zona morta pequena (0,5°) com saída suave: o filtro já tira o tremor, então não precisa de degrau grande
+  const effP = Math.abs(dP) < 0.5 ? 0 : dP - Math.sign(dP)*0.5;
+  const effR = Math.abs(dR) < 0.5 ? 0 : dR - Math.sign(dR)*0.5;
+  // Topo do celular para FRENTE (dP < 0) => cyclic < 0 (nariz desce) | para TRÁS (dP > 0) => cyclic > 0 (flare)
+  // Celular para ESQUERDA (dR < 0) => cyclicLat < 0 | DIREITA (dR > 0) => cyclicLat > 0
+  // Curva progressiva: perto do centro o comando é mais fino (pairado), no fim do curso responde cheio
+  const shape = v=>{ const c = clamp(v, -1, 1); return c*(0.62 + 0.38*Math.abs(c)); };
+  tiltTgtCyc = shape(effP / 14);
+  tiltTgtLat = shape(effR / 15);
 }
 
 let motionListenerBound = false;
@@ -4223,7 +4255,7 @@ function loop(now){
   if(gameState==="flying"&&!paused&&heli){
     tSim+=dt;
     keyControls(dt);
-    if(tiltEnabled) syncMobUI();
+    if(tiltEnabled){ applyTiltFrame(dt); syncMobUI(); }
     physAcc+=dt;
     const hStep=1/240;
     let guard=0;
