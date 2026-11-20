@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>R22 Checkride Trainer 3D v15 — Física Real & Cenário Rico</title>
+<title>R22 Checkride Trainer 3D v16 — Física Real & Cenário Rico</title>
 <style>
 :root{
   --panel:#12161c; --panel2:#1a212b; --line:#2b3543;
@@ -237,7 +237,7 @@ body.startMode #colPad,body.startMode #cycPad,body.startMode #pedPad{display:non
 
 <div class="overlay" id="menu">
   <div class="card">
-    <h1>R22 Checkride Trainer 3D v15<small style="color:#35d17a">VERSÃO 15.3 · acelerômetro mais suave</small><small>Física real · Cenário Rico & Referência de Altura · Robinson R22 Beta II</small></h1>
+    <h1>R22 Checkride Trainer 3D v16<small style="color:#35d17a">VERSÃO 16 · cidade densa, mar vivo e R22 Beta II fiel</small><small>Física real · Cenário Rico & Referência de Altura · Robinson R22 Beta II</small></h1>
     <p class="sub">Toque em qualquer missão abaixo para abrir o briefing ou inicie direto no botão rápido:</p>
     <div class="quickStartRow">
       <button class="act go" onclick="window._quickStart(1)">▶ DECOLAR AGORA (MISSÃO 01 — PAIRADO)</button>
@@ -311,7 +311,7 @@ body.startMode #colPad,body.startMode #cycPad,body.startMode #pedPad{display:non
     <p class="sub" id="sensorModalMsg" style="color:var(--ink);font-size:13px;line-height:1.5;"></p>
     <div class="poh" id="sensorModalFix" style="font-size:12px;color:var(--ink);background:rgba(53,209,122,.10);border-left-color:var(--green);margin:12px 0;"></div>
     <div style="background:#0d1117;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:var(--font-mono);font-size:11px;color:var(--cyan);word-break:break-all;user-select:all;-webkit-user-select:all;" id="fileUrlBox">
-      file:///sdcard/Download/R22_Checkride_Trainer_3D-v15.html
+      file:///sdcard/Download/R22_Checkride_Trainer_3D-v16.html
     </div>
     <div class="btnrow" style="margin-top:14px;">
       <button class="act go" id="btnCopyFileUrl" style="flex:1;">📋 COPIAR ENDEREÇO file:///</button>
@@ -2467,6 +2467,13 @@ function initThreeEngine(){
   const MODERN = parseInt(THREE.REVISION, 10) >= 154;
   const MAX_ANISO = Math.min(8, renderer.capabilities.getMaxAnisotropy ? renderer.capabilities.getMaxAnisotropy() : 1);
   const SUN_DIR = new THREE.Vector3(120, 105, 85).normalize(); // sol de meio de tarde: sombras longas ajudam a ler altura
+  const IS_PHONE = Math.min(VW(), VH()) < 700 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const GLSL_NOISE = `
+float gHash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
+  return mix(mix(gHash(i), gHash(i + vec2(1.0, 0.0)), f.x), mix(gHash(i + vec2(0.0, 1.0)), gHash(i + vec2(1.0, 1.0)), f.x), f.y); }
+`;
+  const hashN = (a, b)=>{ const v = Math.sin(a*127.1 + b*311.7)*43758.5453; return v - Math.floor(v); };
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x6e9bc8);
@@ -2659,20 +2666,20 @@ function initThreeEngine(){
     return {diff, bump, avg};
   }
 
-  // Quebra a repetição do gramado: variação de cor em escala de dezenas e centenas de metros
-  // e transição para a cor média ao longe (some o "papel de parede" visto do alto).
-  function patchGroundMaterial(mat, avgCol){
+  // Solo único com três "camadas" pintadas no shader:
+  //  1) gramado sem repetição visível (variação em dezenas/centenas de metros + cor média ao longe)
+  //  2) campos cultivados em retalhos fora da cidade
+  //  3) malha de ruas, calçadas e quadras da cidade (a mesma grade em que os prédios são plantados)
+  function patchGroundMaterial(mat, avgCol, city){
     mat.onBeforeCompile = (sh)=>{
       sh.uniforms.uFarCol = {value: avgCol};
+      sh.uniforms.uCity = {value: new THREE.Vector4(city.x0, city.x1, city.z0, city.z1)};
+      sh.uniforms.uCityOn = {value: city.on};
       sh.vertexShader = sh.vertexShader
         .replace("#include <common>", "#include <common>\nvarying vec3 vWPos;")
         .replace("#include <begin_vertex>", "#include <begin_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;");
       sh.fragmentShader = sh.fragmentShader
-        .replace("#include <common>", `#include <common>
-varying vec3 vWPos; uniform vec3 uFarCol;
-float gHash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
-  return mix(mix(gHash(i), gHash(i + vec2(1.0, 0.0)), f.x), mix(gHash(i + vec2(0.0, 1.0)), gHash(i + vec2(1.0, 1.0)), f.x), f.y); }`)
+        .replace("#include <common>", "#include <common>\nvarying vec3 vWPos; uniform vec3 uFarCol; uniform vec4 uCity; uniform float uCityOn;\n" + GLSL_NOISE)
         .replace("#include <map_fragment>", `#include <map_fragment>
 {
   float m1 = gNoise(vWPos.xz * 0.013);
@@ -2682,9 +2689,117 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   diffuseColor.rgb = mix(diffuseColor.rgb, uFarCol, smoothstep(90.0, 800.0, gDist) * 0.88);
   diffuseColor.rgb *= 0.70 + 0.36*m1 + 0.26*m2 + 0.12*m3;
   diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.45, 1.16, 0.72), smoothstep(0.58, 0.86, m2) * 0.55);
+
+  float cAz = abs(vWPos.z);
+  float inCity = uCityOn * step(uCity.z - 7.0, cAz) * step(cAz, uCity.w + 7.0) * step(uCity.x - 7.0, vWPos.x) * step(vWPos.x, uCity.y + 7.0);
+
+  vec2 fq = vWPos.xz / vec2(210.0, 140.0);
+  vec2 fcell = floor(fq); vec2 ffr = fract(fq);
+  float fh = gHash(fcell + 11.0);
+  float fieldK = smoothstep(110.0, 175.0, cAz) * (1.0 - inCity);
+  vec3 crop = mix(vec3(0.80, 1.05, 0.75), vec3(1.55, 1.30, 0.70), smoothstep(0.35, 0.90, fh));
+  crop = mix(crop, vec3(1.30, 0.98, 0.72), step(0.88, fh));
+  float hedge = 1.0 - smoothstep(0.012, 0.024, min(min(ffr.x, 1.0 - ffr.x), min(ffr.y, 1.0 - ffr.y) * 1.5));
+  hedge *= 1.0 - smoothstep(500.0, 1200.0, gDist);
+  diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * crop * (1.0 - 0.55*hedge), fieldK * 0.8);
+
+  if(inCity > 0.5){
+    vec2 cq = vec2(vWPos.x - uCity.x, cAz - uCity.z);
+    vec2 cm = mod(cq + 45.0, 90.0) - 45.0;
+    float dR = min(abs(cm.x), abs(cm.y));
+    float road = 1.0 - smoothstep(6.6, 7.0, dR);
+    float walk = 1.0 - smoothstep(9.6, 10.0, dR);
+    vec3 lot = vec3(0.115, 0.115, 0.120) * (0.80 + 0.40*m3);
+    vec3 asph = vec3(0.028, 0.030, 0.034) * (0.80 + 0.50*m3);
+    float along = abs(cm.x) < abs(cm.y) ? vWPos.z : vWPos.x;
+    float dash = step(0.5, fract(along / 9.0)) * (1.0 - smoothstep(0.14, 0.24, dR)) * step(7.5, max(abs(cm.x), abs(cm.y)));
+    dash *= 1.0 - smoothstep(350.0, 800.0, gDist);
+    asph = mix(asph, vec3(0.62, 0.58, 0.40), dash);
+    vec3 cc = mix(lot, vec3(0.30, 0.30, 0.29), walk);
+    diffuseColor.rgb = mix(cc, asph, road);
+  }
 }`);
     };
-    mat.customProgramCacheKey = ()=>"gnd-macro-v1";
+    mat.customProgramCacheKey = ()=>"gnd-macro-v2";
+  }
+
+  // Fachada procedural: janelas, lajes, vitrines no térreo e vidro reflexivo calculados no shader.
+  // Fica nítida a qualquer distância, não usa textura e serve tanto para prédio avulso quanto para os instanciados.
+  function makeFacadeMaterial(){
+    const mat = new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 0.82, metalness: 0.05});
+    mat.onBeforeCompile = (sh)=>{
+      sh.vertexShader = sh.vertexShader
+        .replace("#include <common>", "#include <common>\nvarying vec3 vFL; varying vec3 vFNl; varying vec3 vFO; varying vec3 vFW;")
+        .replace("#include <begin_vertex>", `#include <begin_vertex>
+#ifdef USE_INSTANCING
+  mat4 fM = modelMatrix * instanceMatrix;
+#else
+  mat4 fM = modelMatrix;
+#endif
+  vFL = position * vec3(length(fM[0].xyz), length(fM[1].xyz), length(fM[2].xyz));
+  vFNl = normal;
+  vFO = fM[3].xyz;
+  vFW = (fM * vec4(position, 1.0)).xyz;`);
+      sh.fragmentShader = sh.fragmentShader
+        .replace("#include <common>", "#include <common>\nvarying vec3 vFL; varying vec3 vFNl; varying vec3 vFO; varying vec3 vFW;\n" + GLSL_NOISE)
+        .replace("#include <map_fragment>", `#include <map_fragment>
+  float fSeed = gHash(floor(vFO.xz * 0.5) + 0.5);
+  float fSide = step(abs(vFNl.y), 0.5);
+  float fu = abs(vFNl.x) > 0.5 ? vFL.z : vFL.x;
+  float fStyle = fract(fSeed * 7.31);
+  float fCurtain = step(0.55, fStyle);
+  vec2 fCell = vec2(fu / mix(3.1, 1.6, fCurtain), vFL.y / 3.3);
+  vec2 fId = floor(fCell); vec2 ff = fract(fCell);
+  float fWinA = step(0.07, ff.x) * step(0.16, ff.y);
+  float fWinB = step(0.20, ff.x) * step(ff.x, 0.80) * step(0.24, ff.y) * step(ff.y, 0.82);
+  float fWin = mix(fWinB, fWinA, fCurtain);
+  fWin = mix(fWin, step(0.05, ff.x) * step(ff.y, 0.86), step(vFL.y, 3.3));
+  float fDist = length(vFW - cameraPosition);
+  float fFar = smoothstep(260.0, 800.0, fDist);
+  fWin = mix(fWin, mix(0.34, 0.78, fCurtain), fFar) * fSide;
+  vec3 fWall = mix(vec3(0.60, 0.58, 0.54), vec3(0.30, 0.33, 0.38), fract(fSeed * 3.7));
+  fWall = mix(fWall, vec3(0.46, 0.27, 0.20), step(0.78, fract(fSeed * 5.3)));
+  fWall = mix(fWall, vec3(0.78, 0.76, 0.72), step(0.86, fract(fSeed * 9.1)));
+  fWall *= 0.82 + 0.26 * gNoise(vec2(fu * 0.35, vFL.y * 0.12) + fSeed * 40.0);
+  fWall *= 1.0 - 0.25 * (1.0 - step(0.07, ff.y)) * fSide * (1.0 - fFar);
+  float fWh = gHash(fId + fSeed * 91.0);
+  vec3 fGlass = mix(vec3(0.03, 0.06, 0.10), vec3(0.09, 0.17, 0.25), fWh);
+  vec3 fRoof = vec3(0.17, 0.18, 0.20) * (0.8 + 0.4 * gNoise(vFL.xz * 0.4));
+  diffuseColor.rgb = mix(fRoof, mix(fWall, fGlass, fWin), fSide);
+  vec3 fEmis = vec3(1.0, 0.78, 0.48) * step(0.94, fWh) * fWin * 0.55 * (1.0 - fFar);`)
+        .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\n  roughnessFactor = mix(roughnessFactor, 0.10, fWin);")
+        .replace("#include <metalnessmap_fragment>", "#include <metalnessmap_fragment>\n  metalnessFactor = mix(metalnessFactor, 0.70, fWin);")
+        .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\n  totalEmissiveRadiance += fEmis;");
+    };
+    mat.customProgramCacheKey = ()=>"facade-v1";
+    return mat;
+  }
+  const facadeMat = makeFacadeMaterial();
+  const unitBox = new THREE.BoxGeometry(1, 1, 1); unitBox.translate(0, 0.5, 0);
+
+  // Mar: manchas de vento, variação de profundidade e carneirinhos (espuma solta) animados
+  const seaTimeU = {value: 0};
+  function patchSeaMaterial(mat){
+    mat.onBeforeCompile = (sh)=>{
+      sh.uniforms.uSeaT = seaTimeU;
+      sh.vertexShader = sh.vertexShader
+        .replace("#include <common>", "#include <common>\nvarying vec3 vSPos;")
+        .replace("#include <begin_vertex>", "#include <begin_vertex>\nvSPos = (modelMatrix * vec4(transformed, 1.0)).xyz;");
+      sh.fragmentShader = sh.fragmentShader
+        .replace("#include <common>", "#include <common>\nvarying vec3 vSPos; uniform float uSeaT;\n" + GLSL_NOISE)
+        .replace("#include <color_fragment>", `#include <color_fragment>
+  float sw1 = gNoise(vSPos.xz * 0.55 + vec2(uSeaT * 0.90, uSeaT * 0.35));
+  float sw2 = gNoise(vSPos.xz * 0.13 - vec2(uSeaT * 0.25, uSeaT * 0.11));
+  float sw3 = gNoise(vSPos.xz * 0.021 + 5.0);
+  float sw4 = gNoise(vSPos.xz * 0.0045 + 2.0);
+  float sDist = length(vSPos - cameraPosition);
+  float sFine = gNoise(vSPos.xz * 1.7 - vec2(uSeaT * 0.6, uSeaT * 1.1));
+  float sCaps = smoothstep(0.46, 0.62, sw1 * sFine + sw2 * 0.06) * smoothstep(0.40, 0.72, sw3) * (1.0 - smoothstep(300.0, 900.0, sDist));
+  diffuseColor.rgb *= 0.86 + 0.14 * sw3 + 0.16 * sw4;
+  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.86, 0.93, 0.97), sCaps * 0.55);`)
+        .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\n  roughnessFactor = mix(roughnessFactor, 0.65, sCaps);");
+    };
+    mat.customProgramCacheKey = ()=>"sea-v3" + (mat.vertexColors ? "c" : "n");
   }
 
   function makeAsphaltTextures(){
@@ -2868,13 +2983,15 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
     g.putImageData(img, 0, 0);
     const tex = new THREE.CanvasTexture(c);
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(68, 42);
+    tex.repeat.set(230, 140); // ondulação fina: o reflexo do sol vira cintilação miúda, não manchas
     return tex;
   }
   const seaNormalTex = makeOceanNormalMap();
+  seaNormalTex.anisotropy = MAX_ANISO;
   const seaNormalTex2 = seaNormalTex.clone();
   seaNormalTex2.needsUpdate = true;
-  seaNormalTex2.repeat.set(110, 90);
+  seaNormalTex2.anisotropy = MAX_ANISO;
+  seaNormalTex2.repeat.set(420, 380);
 
   function enableShadowsRecursive(obj, cast=true, receive=true){
     obj.traverse(ch=>{ if(ch.isMesh){ ch.castShadow = cast; ch.receiveShadow = receive; } });
@@ -2916,6 +3033,22 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
     extBodyGroup.add(m);
     return m;
   }
+  // Fatia do perfil entre duas posições ao longo do eixo (interpola o raio: não depende de cair um ponto da curva ali)
+  function podSlice(y0, y1, n){
+    const out = [], N = n || 4;
+    for(let k=0; k<=N; k++){
+      const y = y0 + (y1 - y0)*k/N;
+      let r = 0;
+      for(let i=1; i<podPts.length; i++){
+        if(y <= podPts[i].y || i === podPts.length-1){
+          const a = podPts[i-1], b = podPts[i], t = clamp((y - a.y)/Math.max(1e-6, b.y - a.y), 0, 1);
+          r = a.x + (b.x - a.x)*t; break;
+        }
+      }
+      out.push(new THREE.Vector2(Math.max(0, r), y));
+    }
+    return out;
+  }
   const WAIST = 0.10; // quanto o casco pintado sobe acima da linha de cintura
   const podRear = podPts.filter(q=>q.y <= 0.10), podFront = podPts.filter(q=>q.y >= 0.06);
   const podMid = podPts.filter(q=>q.y >= -1.0 && q.y <= 0.88);
@@ -2929,7 +3062,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   podPart(podMid, Math.PI - 0.225, 0.035, matGoldTrim, 1.007);
   // Montante central do para-brisa e arco da porta
   podPart(podFront, Math.PI*1.5 - 0.022, 0.044, matMatteBlack, 1.004);
-  podPart(podPts.filter(q=>q.y >= 0.04 && q.y <= 0.13), Math.PI + WAIST, Math.PI - 2*WAIST, matMatteBlack, 1.005);
+  podPart(podSlice(0.04, 0.12), Math.PI + WAIST, Math.PI - 2*WAIST, matMatteBlack, 1.005);
 
   const bellyFloor = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.09, 1.18), matMatteBlack);
   bellyFloor.position.set(0.18, -0.92, 0);
@@ -2982,62 +3115,240 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   cockpitGroup.add(pedestalCol);
 
   const panelPod = new THREE.Group();
-  panelPod.position.set(0.64, -0.45, 0.04);
+  panelPod.position.set(0.64, -0.39, 0.04);
   panelPod.rotation.order = "YXZ";
   panelPod.rotation.y = 0.14;
   panelPod.rotation.z = -0.20;
   cockpitGroup.add(panelPod);
 
-  const panelBox = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.23, 0.38), matPanel);
+  const panelBox = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.49, 0.37), matPanel);
+  panelBox.position.y = -0.125;
   panelPod.add(panelBox);
   const hoodLip = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.025, 0.40), matMatteBlack);
-  hoodLip.position.set(-0.03, 0.12, 0);
+  hoodLip.position.set(-0.03, 0.125, 0);
   panelPod.add(hoodLip);
 
-  const panelCv = document.createElement("canvas");
-  panelCv.width = 512; panelCv.height = 320;
+  const PW = 512, PH = 704;
+  const panelCv = document.createElement("canvas"); panelCv.width = PW; panelCv.height = PH;
   const pCtx = panelCv.getContext("2d");
+  const panelBg = document.createElement("canvas"); panelBg.width = PW; panelBg.height = PH;
   const panelTex3D = new THREE.CanvasTexture(panelCv);
-  const panelFace = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 0.205), new THREE.MeshBasicMaterial({map: panelTex3D}));
-  panelFace.position.set(-0.123, -0.005, 0);
+  if(THREE.SRGBColorSpace !== undefined) panelTex3D.colorSpace = THREE.SRGBColorSpace;
+  panelTex3D.anisotropy = MAX_ANISO;
+  const panelFace = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 0.48), new THREE.MeshBasicMaterial({map: panelTex3D}));
+  panelFace.position.set(-0.1235, -0.125, 0);
   panelFace.rotation.y = -Math.PI/2;
   panelPod.add(panelFace);
 
+  const DEG = Math.PI/180;
+  const P_LIGHTS = [["MR TEMP","#ffb300"],["MR CHIP","#ffb300"],["TR CHIP","#ffb300"],["LOW FUEL","#ffb300"],["LOW RPM","#ff4a3d"],["OIL","#ff4a3d"],
+                    ["ALT","#ff4a3d"],["CLUTCH","#ffb300"],["STARTER ON","#ffb300"],["GOV OFF","#ffb300"],["BRAKE","#ffb300"],["CO","#ff4a3d"]];
+  const lightRect = i=>({x: 13 + (i%6)*81.5, y: 10 + Math.floor(i/6)*33, w: 76, h: 27});
+  const PG = {vsi: [150, 158, 62], asi: [362, 158, 62], tach: [150, 304, 68], alt: [362, 304, 62], map: [150, 446, 55]};
+  const SMALL = ["AMPS", "OIL PRESS", "AUX FUEL", "OIL TEMP", "MAIN FUEL", "CYL TEMP"];
+  const smallPos = i=>[49 + i*82.8, 560, 31];
+
+  (function drawPanelBackground(){
+    const g = panelBg.getContext("2d");
+    // Chapa preta fosca do console, com leve textura e moldura
+    g.fillStyle = "#15171b"; g.fillRect(0, 0, PW, PH);
+    for(let i=0; i<2600; i++){ g.fillStyle = "rgba(255,255,255," + (0.012 + (i%5)*0.004) + ")"; g.fillRect((i*197)%PW, (i*311)%PH, 2, 1); }
+    g.strokeStyle = "#31363e"; g.lineWidth = 3; g.strokeRect(3, 3, PW-6, PH-6);
+    g.textAlign = "center"; g.textBaseline = "middle";
+
+    const dial = (cx, cy, r)=>{
+      g.fillStyle = "#30353d"; g.beginPath(); g.arc(cx, cy, r+8, 0, 7); g.fill();
+      g.fillStyle = "#0d0f12"; g.beginPath(); g.arc(cx, cy, r+4, 0, 7); g.fill();
+      const gr = g.createRadialGradient(cx - r*0.3, cy - r*0.35, r*0.1, cx, cy, r);
+      gr.addColorStop(0, "#15181c"); gr.addColorStop(1, "#040506");
+      g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill();
+      for(const a of [45, 135, 225, 315]){ // parafusos de fixação
+        const sx = cx + Math.cos(a*DEG)*(r+14), sy = cy + Math.sin(a*DEG)*(r+14);
+        g.fillStyle = "#565d68"; g.beginPath(); g.arc(sx, sy, 3.2, 0, 7); g.fill();
+        g.strokeStyle = "#1c1f24"; g.lineWidth = 1; g.beginPath(); g.moveTo(sx-2.2, sy); g.lineTo(sx+2.2, sy); g.stroke();
+      }
+    };
+    const tick = (cx, cy, r, a, len, w, col)=>{
+      g.strokeStyle = col || "#f2f4f6"; g.lineWidth = w;
+      g.beginPath(); g.moveTo(cx + Math.cos(a)*r, cy + Math.sin(a)*r); g.lineTo(cx + Math.cos(a)*(r-len), cy + Math.sin(a)*(r-len)); g.stroke();
+    };
+    const band = (cx, cy, r, a0, a1, col, w)=>{ g.strokeStyle = col; g.lineWidth = w; g.beginPath(); g.arc(cx, cy, r, Math.min(a0,a1), Math.max(a0,a1)); g.stroke(); };
+    const txt = (t, x, y, size, col, bold)=>{ g.fillStyle = col || "#f2f4f6"; g.font = (bold === false ? "" : "bold ") + size + "px Arial"; g.fillText(t, x, y); };
+
+    // Luzes de aviso apagadas
+    P_LIGHTS.forEach((L, i)=>{
+      const r = lightRect(i);
+      g.fillStyle = "#0b0c0e"; g.fillRect(r.x-2, r.y-2, r.w+4, r.h+4);
+      g.fillStyle = "#22201c"; g.fillRect(r.x, r.y, r.w, r.h);
+      txt(L[0], r.x + r.w/2, r.y + r.h/2 + 1, L[0].length > 8 ? 10 : 11.5, "#5f5a50");
+    });
+
+    // --- Variômetro (VSI): 0 à esquerda, sobe pelo topo, desce por baixo ---
+    { const [cx, cy, r] = PG.vsi; dial(cx, cy, r);
+      for(let v=-2000; v<=2000; v+=100){
+        const a = Math.PI + (v/2000)*Math.PI*0.94, major = v%500 === 0;
+        tick(cx, cy, r-3, a, major ? 11 : 6, major ? 2.4 : 1.2);
+        if(major && Math.abs(v) < 2000) txt(String(Math.abs(v)/100), cx + Math.cos(a)*(r-23), cy + Math.sin(a)*(r-23), 13);
+      }
+      txt("20", cx + r - 22, cy, 13);
+      txt("UP", cx - 22, cy - 15, 9, "#c9ced6"); txt("DN", cx - 22, cy + 15, 9, "#c9ced6");
+      txt("VERTICAL SPEED", cx + 8, cy - 26, 7.5, "#c9ced6"); txt("100 FT PER MIN", cx + 8, cy + 27, 7.5, "#c9ced6");
+    }
+    // --- Velocímetro (KIAS): arco verde 50–102, linha vermelha Vne 102 ---
+    { const [cx, cy, r] = PG.asi; dial(cx, cy, r);
+      const A = v=>(135 + clamp(v/120, 0, 1)*270)*DEG;
+      band(cx, cy, r-6, A(50), A(102), "#27b85f", 6);
+      for(let v=0; v<=120; v+=5){
+        const major = v%10 === 0; tick(cx, cy, r-3, A(v), major ? 11 : 6, major ? 2.4 : 1.2);
+        if(v%20 === 0 && v > 0) txt(String(v), cx + Math.cos(A(v))*(r-24), cy + Math.sin(A(v))*(r-24), 13);
+      }
+      tick(cx, cy, r-1, A(102), 15, 3.5, "#ff3b30");
+      txt("AIRSPEED", cx, cy - 22, 8.5, "#c9ced6"); txt("KNOTS", cx, cy + 24, 9, "#c9ced6");
+    }
+    // --- Tacômetro duplo: MOTOR à esquerda (E), ROTOR à direita (R), em % ---
+    { const [cx, cy, r] = PG.tach; dial(cx, cy, r);
+      const AE = v=>(120 + clamp((v-50)/60, 0, 1)*120)*DEG, AR = v=>(60 - clamp((v-50)/60, 0, 1)*120)*DEG;
+      for(const A of [AE, AR]){
+        band(cx, cy, r-6, A(97), A(101), "#e2b100", 5);
+        band(cx, cy, r-6, A(101), A(104), "#27b85f", 6);
+        for(let v=50; v<=110; v+=2){
+          const major = v%10 === 0; tick(cx, cy, r-3, A(v), major ? 11 : (v%5 === 0 ? 8 : 5), major ? 2.4 : 1.1);
+          if(major) txt(String(v), cx + Math.cos(A(v))*(r-24), cy + Math.sin(A(v))*(r-24), 11.5);
+        }
+        tick(cx, cy, r-1, A(104), 14, 3.2, "#ff3b30");
+        tick(cx, cy, r-1, A(97), 14, 3.2, "#ff3b30");
+      }
+      g.strokeStyle = "#3a3f47"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(cx, cy - r + 6); g.lineTo(cx, cy + r - 6); g.stroke();
+      txt("E", cx - 14, cy - r + 20, 13); txt("R", cx + 14, cy - r + 20, 13);
+      txt("ENGINE", cx - 22, cy + r - 16, 7, "#c9ced6"); txt("ROTOR", cx + 22, cy + r - 16, 7, "#c9ced6");
+      txt("% RPM", cx, cy + r - 30, 8, "#c9ced6");
+    }
+    // --- Altímetro: ponteiro longo = centenas de pés, curto = milhares ---
+    { const [cx, cy, r] = PG.alt; dial(cx, cy, r);
+      for(let k=0; k<50; k++){
+        const a = (-90 + k*7.2)*DEG, major = k%5 === 0; tick(cx, cy, r-3, a, major ? 11 : 6, major ? 2.4 : 1.1);
+        if(major) txt(String(k/5), cx + Math.cos(a)*(r-23), cy + Math.sin(a)*(r-23), 14);
+      }
+      txt("ALT", cx, cy - 24, 9, "#c9ced6"); txt("100 FT", cx - 2, cy + 24, 7.5, "#c9ced6");
+      g.fillStyle = "#e9e5d6"; g.fillRect(cx + 16, cy - 8, 30, 16); txt("29.9", cx + 31, cy + 1, 10, "#15171b");
+    }
+    // --- Pressão de admissão (MAP), polegadas de mercúrio ---
+    { const [cx, cy, r] = PG.map; dial(cx, cy, r);
+      const A = v=>(135 + clamp((v-10)/20, 0, 1)*270)*DEG;
+      band(cx, cy, r-6, A(15), A(23.5), "#27b85f", 5);
+      band(cx, cy, r-6, A(23.5), A(25.9), "#e2b100", 5);
+      for(let v=10; v<=30; v+=1){
+        const major = v%5 === 0; tick(cx, cy, r-3, A(v), major ? 10 : 5, major ? 2.2 : 1.1);
+        if(major) txt(String(v), cx + Math.cos(A(v))*(r-22), cy + Math.sin(A(v))*(r-22), 12);
+      }
+      txt("MANIFOLD", cx, cy - 20, 7.5, "#c9ced6"); txt("PRESS", cx, cy - 11, 7.5, "#c9ced6"); txt("IN HG", cx, cy + 22, 8, "#c9ced6");
+    }
+    // --- Relógio digital + temperatura do ar do carburador ---
+    g.fillStyle = "#30353d"; g.fillRect(296, 398, 134, 50); g.fillStyle = "#0a0c0e"; g.fillRect(300, 402, 126, 42);
+    txt("CLOCK", 363, 456, 7.5, "#c9ced6");
+    { const cx = 468, cy = 430, r = 26; dial(cx, cy, r);
+      const A = v=>(150 + clamp((v+20)/60, 0, 1)*240)*DEG;
+      band(cx, cy, r-4, A(-15), A(5), "#e2b100", 4);
+      for(let v=-20; v<=40; v+=10) tick(cx, cy, r-2, A(v), 6, 1.4);
+      txt("CARB", cx, cy + 10, 6.5, "#c9ced6"); txt("°C", cx, cy + 18, 6.5, "#c9ced6");
+    }
+    // --- Fileira de instrumentos do motor ---
+    SMALL.forEach((name, i)=>{
+      const [cx, cy, r] = smallPos(i); dial(cx, cy, r);
+      const A = v=>(215 + clamp(v, 0, 1)*110)*DEG;
+      const fuel = name.indexOf("FUEL") >= 0;
+      if(name === "AMPS"){ band(cx, cy, r-4, A(0.5), A(1), "#27b85f", 3.5); }
+      else if(fuel){ band(cx, cy, r-4, A(0), A(0.12), "#ff3b30", 3.5); }
+      else { band(cx, cy, r-4, A(0.28), A(0.82), "#27b85f", 3.5); tick(cx, cy, r-1, A(0.94), 9, 2.4, "#ff3b30"); }
+      for(let k=0; k<=4; k++) tick(cx, cy, r-2, A(k/4), 6, 1.4);
+      if(fuel){ txt("E", cx - 16, cy - 4, 8); txt("F", cx + 16, cy - 4, 8); }
+      if(name === "AMPS"){ txt("-", cx - 16, cy - 4, 10); txt("+", cx + 16, cy - 4, 10); }
+      const parts = name.split(" ");
+      txt(parts[0], cx, cy + 9, 6.6, "#c9ced6"); if(parts[1]) txt(parts[1], cx, cy + 17, 6.6, "#c9ced6");
+    });
+    // --- Chave de magnetos e interruptores ---
+    { const cx = 60, cy = 648;
+      g.fillStyle = "#30353d"; g.beginPath(); g.arc(cx, cy, 30, 0, 7); g.fill();
+      g.fillStyle = "#9aa1ab"; g.beginPath(); g.arc(cx, cy, 20, 0, 7); g.fill();
+      g.fillStyle = "#15171b"; g.fillRect(cx - 2.5, cy - 15, 5, 30);
+      [["OFF", 200], ["R", 235], ["L", 270], ["BOTH", 305], ["START", 340]].forEach(q=>txt(q[0], cx + Math.cos(q[1]*DEG)*41, cy + Math.sin(q[1]*DEG)*41, 7, "#c9ced6"));
+    }
+    ["MASTER\nBATT", "ALT", "STROBE", "NAV\nLTS", "LDG\nLT", "CLUTCH"].forEach((lab, i)=>{
+      const x = 150 + i*62, y = 652;
+      g.fillStyle = "#0b0c0e"; g.fillRect(x - 16, y - 20, 32, 36);
+      g.fillStyle = "#3a3f47"; g.beginPath(); g.arc(x, y - 2, 9, 0, 7); g.fill();
+      g.strokeStyle = "#d6dae0"; g.lineWidth = 5; g.lineCap = "round"; g.beginPath(); g.moveTo(x, y - 2); g.lineTo(x, y - 17); g.stroke(); g.lineCap = "butt";
+      lab.split("\n").forEach((ln, k)=>txt(ln, x, y + 24 + k*8, 7, "#c9ced6"));
+    });
+    txt("R22 BETA II", PW/2, 612, 9, "#8f96a0");
+    txt("NO AEROBATIC MANEUVERS · LOW-G PUSHOVERS PROHIBITED", PW/2, 696, 6.5, "#8f96a0", false);
+  })();
+
+  const smallVals = [0.5, 0, 0.5, 0, 0.72, 0];
+  let panelSkip = 0;
   function update3DPanelTexture(){
     if(!heli) return;
+    if((panelSkip++ & 1) && camMode !== 2) return; // fora da cabine o painel mal aparece: atualiza quadro sim, quadro não
     const st = stateVals();
-    pCtx.fillStyle = "#12161e"; pCtx.fillRect(0, 0, 512, 320);
-    pCtx.strokeStyle = "#2b3646"; pCtx.lineWidth = 4; pCtx.strokeRect(4, 4, 504, 312);
-    const pLights = [
-      {on:heli.rpm<RPM_HORN&&!heli.onGround,txt:"LOW RPM",c:"#ff5449"},
-      {on:!engineOn,txt:"ENG OUT",c:"#ffb300"},
-      {on:heli.vrs>0.25,txt:"VRS",c:"#ffb300"},
-      {on:heli.nz<0.5&&!heli.onGround,txt:"LOW-G",c:"#ff5449"},
-      {on:heli.ige>0.15&&!heli.onGround,txt:"IGE",c:"#4fd6ff"}
+    const g = pCtx;
+    g.drawImage(panelBg, 0, 0);
+    g.textAlign = "center"; g.textBaseline = "middle";
+
+    const inStart = !!(mission && mission.id === "start" && su);
+    const rotorTurning = heli.rpm > 20;
+    const lit = [
+      false, false, false, false,
+      heli.rpm < RPM_HORN && (!heli.onGround || rotorTurning) && !(inStart && !su.gov),
+      !engineOn || (inStart && !su.run),
+      !engineOn || (inStart && !su.alt),
+      inStart && su.clutch && su.clK < 0.97,
+      inStart && su.key === "START",
+      inStart && !su.gov,
+      false, false
     ];
-    pCtx.font = "bold 14px Arial"; pCtx.textAlign = "center";
-    pLights.forEach((L, i)=>{
-      const lx = 26 + i*94;
-      pCtx.fillStyle = L.on ? L.c : "#1d2430"; pCtx.fillRect(lx, 12, 84, 24);
-      pCtx.fillStyle = L.on ? "#0d1117" : "#68768a"; pCtx.fillText(L.txt, lx+42, 29);
+    P_LIGHTS.forEach((L, i)=>{
+      if(!lit[i]) return;
+      const r = lightRect(i);
+      g.shadowColor = L[1]; g.shadowBlur = 14; g.fillStyle = L[1]; g.fillRect(r.x, r.y, r.w, r.h); g.shadowBlur = 0;
+      g.fillStyle = "#1a0d06"; g.font = "bold " + (L[0].length > 8 ? 10 : 11.5) + "px Arial"; g.fillText(L[0], r.x + r.w/2, r.y + r.h/2 + 1);
     });
-    function draw3DGauge(cx, cy, r, lbl, val, vMin, vMax, disp, col){
-      pCtx.fillStyle = "#090c10"; pCtx.beginPath(); pCtx.arc(cx, cy, r, 0, Math.PI*2); pCtx.fill();
-      pCtx.strokeStyle = "#455266"; pCtx.lineWidth = 3; pCtx.stroke();
-      const a0 = Math.PI*0.75, a1 = Math.PI*2.25, a = a0 + clamp((val-vMin)/(vMax-vMin), 0, 1)*(a1-a0);
-      pCtx.strokeStyle = col; pCtx.lineWidth = 5; pCtx.beginPath(); pCtx.arc(cx, cy, r*0.84, a0, a); pCtx.stroke();
-      pCtx.strokeStyle = "#f2f6fa"; pCtx.lineWidth = 3.5; pCtx.beginPath(); pCtx.moveTo(cx, cy); pCtx.lineTo(cx + Math.cos(a)*r*0.74, cy + Math.sin(a)*r*0.74); pCtx.stroke();
-      pCtx.fillStyle = "#9fb0c2"; pCtx.font = "bold 14px Arial"; pCtx.fillText(lbl, cx, cy - r*0.32);
-      pCtx.fillStyle = "#35d17a"; pCtx.font = "bold 18px Consolas,monospace"; pCtx.fillText(disp, cx, cy + r*0.48);
-    }
-    draw3DGauge(105, 108, 56, "IAS KT", st.iasKt, 0, 110, fmt(st.iasKt), "#35d17a");
-    draw3DGauge(256, 108, 56, "ALT FT", st.aglFt, 0, 800, fmt(st.aglFt), "#4fd6ff");
-    draw3DGauge(407, 108, 56, "VSI", st.vsiF, -1500, 1500, fmt(st.vsiF/100,1), "#ffb300");
-    draw3DGauge(135, 240, 60, "ROTOR %", heli.rpm, 60, 115, fmt(heli.rpm,1), heli.rpm<97?"#ff5449":"#35d17a");
-    draw3DGauge(285, 240, 60, "MAP HG", heli.mapHg, 8, 28, engineOn?fmt(heli.mapHg,1):"OFF", "#ffb300");
-    pCtx.fillStyle = "#090c10"; pCtx.fillRect(365, 192, 125, 96); pCtx.strokeStyle = "#35d17a"; pCtx.lineWidth = 2; pCtx.strokeRect(365, 192, 125, 96);
-    pCtx.fillStyle = "#9fb0c2"; pCtx.font = "bold 14px Arial"; pCtx.fillText("RAD ALT", 427, 216);
-    pCtx.fillStyle = st.aglFt<=12 ? "#35d17a" : "#4fd6ff"; pCtx.font = "bold 28px Consolas,monospace"; pCtx.fillText((st.aglFt<20?fmt(st.aglFt,1):fmt(st.aglFt,0))+"'", 427, 255);
+
+    const needle = (cx, cy, a, len, w, col, tail)=>{
+      g.strokeStyle = col || "#ffffff"; g.lineWidth = w; g.lineCap = "round";
+      g.beginPath(); g.moveTo(cx - Math.cos(a)*(tail || 0), cy - Math.sin(a)*(tail || 0)); g.lineTo(cx + Math.cos(a)*len, cy + Math.sin(a)*len); g.stroke();
+      g.lineCap = "butt";
+    };
+    const hubCap = (cx, cy, r)=>{ g.fillStyle = "#23272d"; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill(); g.fillStyle = "#4a515b"; g.beginPath(); g.arc(cx, cy, r*0.45, 0, 7); g.fill(); };
+
+    { const [cx, cy, r] = PG.vsi; needle(cx, cy, Math.PI + clamp(st.vsiF/2000, -1, 1)*Math.PI*0.94, r-14, 3.2, "#ffffff", 10); hubCap(cx, cy, 7); }
+    { const [cx, cy, r] = PG.asi; needle(cx, cy, (135 + clamp(st.iasKt/120, 0, 1)*270)*DEG, r-14, 3.2, "#ffffff", 10); hubCap(cx, cy, 7); }
+    { const [cx, cy, r] = PG.tach;
+      const eng = (heli.tacEng !== undefined && isFinite(heli.tacEng)) ? heli.tacEng : heli.rpm;
+      needle(cx - 5, cy, (120 + clamp((eng-50)/60, 0, 1)*120)*DEG, r-17, 3.4, "#ffffff", 0);
+      needle(cx + 5, cy, (60 - clamp((heli.rpm-50)/60, 0, 1)*120)*DEG, r-17, 3.4, "#ffffff", 0);
+      hubCap(cx - 5, cy, 5); hubCap(cx + 5, cy, 5); }
+    { const [cx, cy, r] = PG.alt; const altFt = Math.max(0, (heli.y - CG_GROUND)/FT);
+      needle(cx, cy, (-90 + (altFt/10000)*360)*DEG, r*0.50, 5, "#ffffff", 6);
+      needle(cx, cy, (-90 + ((altFt%1000)/1000)*360)*DEG, r-13, 2.8, "#ffffff", 10); hubCap(cx, cy, 7); }
+    { const [cx, cy, r] = PG.map; const mp = (engineOn || inStart) ? heli.mapHg : 29.5;
+      needle(cx, cy, (135 + clamp((mp-10)/20, 0, 1)*270)*DEG, r-13, 3, "#ffffff", 9); hubCap(cx, cy, 6); }
+    needle(468, 430, (150 + clamp((12+20)/60, 0, 1)*240)*DEG, 17, 2, "#ffffff", 4); hubCap(468, 430, 3.5);
+
+    // Instrumentos do motor: valores acompanham motor ligado/desligado com inércia de ponteiro
+    const running = inStart ? !!su.run : engineOn;
+    const oilT = inStart && isFinite(su.oilT) ? clamp(su.oilT/120, 0, 1) : (running ? 0.58 : 0.2);
+    const tgt = [running ? 0.62 : 0.42, running ? 0.62 : 0, 0.5, oilT, 0.72, running ? 0.6 : 0.15];
+    SMALL.forEach((name, i)=>{
+      smallVals[i] += (tgt[i] - smallVals[i])*0.06;
+      const [cx, cy, r] = smallPos(i);
+      needle(cx, cy, (215 + clamp(smallVals[i], 0, 1)*110)*DEG, r-8, 2.2, "#ffffff", 0); hubCap(cx, cy, 3.5);
+    });
+
+    // Relógio: tempo de missão
+    const tt = met ? Math.max(0, met.t) : 0;
+    const mm = Math.floor(tt/60), ss = Math.floor(tt%60);
+    g.fillStyle = "#ffb000"; g.font = "bold 26px Consolas,monospace";
+    g.fillText((mm < 10 ? "0" : "") + mm + ":" + (ss < 10 ? "0" : "") + ss, 363, 424);
     panelTex3D.needsUpdate = true;
   }
 
@@ -3078,18 +3389,74 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   const boomStripe = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.088, 0.55, 12), matWhite); boomStripe.rotation.z = Math.PI/2 - 0.035; boomStripe.position.set(-3.35, -0.41, 0); extBodyGroup.add(boomStripe);
 
   // Estabilizador vertical + horizontal + guarda-cauda ventral (tailguard)
-  const vFin = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.92, 0.04), matWhite); vFin.position.set(-3.88, -0.42, 0); extBodyGroup.add(vFin);
-  const hStab = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.035, 0.78), matRed); hStab.position.set(-3.72, -0.42, -0.22); extBodyGroup.add(hStab);
+  // Empenagem do R22: deriva superior e inferior no fim do cone + estabilizador horizontal do lado direito
+  const vFin = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.56, 0.028), matWhite); vFin.position.set(-3.94, -0.14, 0.02); vFin.rotation.z = 0.26; extBodyGroup.add(vFin);
+  const vFinLow = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.44, 0.028), matWhite); vFinLow.position.set(-3.92, -0.74, 0.02); vFinLow.rotation.z = -0.22; extBodyGroup.add(vFinLow);
+  const hStab = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.03, 0.74), matRed); hStab.position.set(-3.74, -0.44, 0.40); extBodyGroup.add(hStab);
+  const hStabTip = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.20, 0.022), matWhite); hStabTip.position.set(-3.74, -0.44, 0.77); extBodyGroup.add(hStabTip);
+  const trGearbox = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.075, 0.16, 10), matSteel); trGearbox.rotation.z = Math.PI/2; trGearbox.position.set(-4.06, -0.45, 0); extBodyGroup.add(trGearbox);
   const tailGuard = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.42, 6), matSteel); tailGuard.position.set(-3.90, -1.04, 0); tailGuard.rotation.z = 0.25; extBodyGroup.add(tailGuard);
 
   // Rotor de cauda com pontas amarelas de alerta
-  const tailRotorGroup = new THREE.Group(); tailRotorGroup.position.set(-4.04, -0.45, 0.14);
+  const tailRotorGroup = new THREE.Group(); tailRotorGroup.position.set(-4.06, -0.45, -0.16); // no R22 o rotor de cauda fica do lado esquerdo
   const trHub = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.08, 10), matSteel); trHub.rotation.x = Math.PI/2; tailRotorGroup.add(trHub);
   const trBlade = new THREE.Mesh(new THREE.BoxGeometry(0.085, 1.12, 0.018), matMatteBlack); tailRotorGroup.add(trBlade);
   for(const s of [-1, 1]){
     const tip = new THREE.Mesh(new THREE.BoxGeometry(0.088, 0.14, 0.02), matYellow); tip.position.y = s*0.50; tailRotorGroup.add(tip);
   }
   extBodyGroup.add(tailRotorGroup);
+
+  // --- Tanques de combustível (principal à esquerda, auxiliar à direita) atrás da cabine ---
+  for(const side of [-1, 1]){
+    const tank = new THREE.Mesh(new THREE.SphereGeometry(0.5, 18, 12), matRed);
+    tank.scale.set(0.86, side < 0 ? 0.50 : 0.42, 0.40); tank.position.set(-0.50, -0.07, side*0.30); extBodyGroup.add(tank);
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.03, 10), matSteel); cap.position.set(-0.42, side < 0 ? 0.185 : 0.145, side*0.30); extBodyGroup.add(cap);
+  }
+  // --- Motor Lycoming O-360 aparente: cilindros opostos, voluta da ventoinha, polias e correias ---
+  for(const side of [-1, 1]) for(const cx of [-0.50, -0.74]){
+    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.20, 10), matSteel);
+    cyl.rotation.x = Math.PI/2; cyl.position.set(cx, -0.68, side*0.30); extBodyGroup.add(cyl);
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.05), matDark); head.position.set(cx, -0.68, side*0.41); extBodyGroup.add(head);
+  }
+  const fanScroll = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.15, 22), matWhite); fanScroll.rotation.z = Math.PI/2; fanScroll.position.set(-1.02, -0.66, 0); extBodyGroup.add(fanScroll);
+  const fanEye = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.16, 16), matMatteBlack); fanEye.rotation.z = Math.PI/2; fanEye.position.set(-1.03, -0.66, 0); extBodyGroup.add(fanEye);
+  const upperSheave = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.07, 18), matDark); upperSheave.rotation.z = Math.PI/2; upperSheave.position.set(-0.90, -0.24, 0); extBodyGroup.add(upperSheave);
+  const lowerSheave = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.10, 0.07, 14), matDark); lowerSheave.rotation.z = Math.PI/2; lowerSheave.position.set(-0.90, -0.66, 0); extBodyGroup.add(lowerSheave);
+  for(const bz of [-0.13, 0.13]){
+    const belt = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.44, 0.012), matMatteBlack); belt.position.set(-0.90, -0.45, bz); belt.rotation.x = bz > 0 ? -0.16 : 0.16; extBodyGroup.add(belt);
+  }
+  // Treliça de tubos de aço que liga cabine, motor e cone de cauda
+  for(const side of [-1, 1]){
+    const t1 = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.78, 6), matSteel); t1.position.set(-0.86, -0.56, side*0.20); t1.rotation.z = 0.95; extBodyGroup.add(t1);
+    const t2 = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.62, 6), matSteel); t2.position.set(-0.98, -0.62, side*0.16); t2.rotation.z = -0.55; extBodyGroup.add(t2);
+  }
+  // Tubo de pitot na frente do pilone do mastro, segundo farol de pouso e antena
+  const pitot = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.20, 6), matSteel); pitot.rotation.z = Math.PI/2; pitot.position.set(0.20, 0.30, 0); extBodyGroup.add(pitot);
+  const landingLamp2 = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 10), new THREE.MeshBasicMaterial({color: 0xfff8dc})); landingLamp2.position.set(1.26, -0.66, 0); extBodyGroup.add(landingLamp2);
+  const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.42, 5), matMatteBlack); antenna.position.set(-1.9, -0.62, 0); antenna.rotation.z = 0.5; extBodyGroup.add(antenna);
+  // Montantes da porta (moldura pintada entre para-brisa e janela da porta) e maçanetas
+  podPart(podSlice(0.50, 0.58), Math.PI + WAIST, 0.95, matRedHull, 1.004);
+  podPart(podSlice(0.50, 0.58), Math.PI*2 - WAIST - 0.95, 0.95, matRedHull, 1.004);
+  for(const side of [-1, 1]){
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.022, 0.02), matSteel); handle.position.set(0.30, -0.47, side*0.557); extBodyGroup.add(handle);
+  }
+  // Matrícula fictícia e nome do modelo pintados no cone de cauda
+  (function addDecals(){
+    const c = document.createElement("canvas"); c.width = 512; c.height = 96;
+    const g = c.getContext("2d");
+    g.clearRect(0, 0, 512, 96);
+    g.fillStyle = "#ffffff"; g.font = "bold 70px Arial"; g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText("PT-CHK", 256, 50);
+    const tex = new THREE.CanvasTexture(c);
+    if(THREE.SRGBColorSpace !== undefined) tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = MAX_ANISO;
+    const mat = new THREE.MeshStandardMaterial({map: tex, transparent: true, roughness: 0.4, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2});
+    for(const side of [-1, 1]){
+      const d = new THREE.Mesh(new THREE.PlaneGeometry(0.92, 0.17), mat);
+      d.position.set(-2.05, -0.37, side*0.128); d.rotation.y = side > 0 ? 0 : Math.PI; d.rotation.z = side > 0 ? -0.035 : 0.035;
+      extBodyGroup.add(d);
+    }
+  })();
 
   // Mastro + Cabeça do Rotor Principal detalhada (swashplate, teetering hub, pitch links)
   const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.064, 1.22, 14), matDark); mast.position.set(-0.08, 0.01, 0); extBodyGroup.add(mast);
@@ -3099,6 +3466,13 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   const rotorHub = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.09, 0.14), matSteel); mainRotorGroup.add(rotorHub);
   const rotorCap = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.10, 12), matDark); rotorCap.position.y = 0.06; mainRotorGroup.add(rotorCap);
 
+  // Cabeça do rotor semirrígido: balancim (teeter), garras das pás e hastes de comando de passo
+  const teeterBolt = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.22, 8), matDark); teeterBolt.rotation.x = Math.PI/2; teeterBolt.position.y = 0.02; mainRotorGroup.add(teeterBolt);
+  for(const sd of [-1, 1]){
+    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.055, 0.13), matSteel); grip.position.set(sd*0.37, 0, 0); mainRotorGroup.add(grip);
+    const horn = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.03, 0.16), matDark); horn.position.set(sd*0.30, -0.01, sd*0.12); mainRotorGroup.add(horn);
+    const link = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.13, 6), matSteel); link.position.set(sd*0.30, -0.075, sd*0.19); mainRotorGroup.add(link);
+  }
   const blade1Pivot = new THREE.Group();
   const blade1 = new THREE.Mesh(new THREE.BoxGeometry(ROTOR_R, 0.022, 0.185), matMatteBlack); blade1.position.set(ROTOR_R/2, 0, 0); blade1Pivot.add(blade1);
   const b1Tip = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.024, 0.19), matWhite); b1Tip.position.set(ROTOR_R - 0.15, 0, 0); blade1Pivot.add(b1Tip);
@@ -3193,6 +3567,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   let seaMesh = null, farSeaMesh = null, boatGroup = null, windsockCone = null, hoistLine = null;
   let towerBeacon = null, lighthouseBeacon = null, boatWake = null;
   let trafficCars = [], cloudGroups = [], birds = [], smokePuffs = [], partyBulbs = [], ambSirens = [], papiLights = [];
+  let seaBobbers = [], cityCars = null;
 
   // Árvore orgânica realista com tronco + 4 volumes irregulares de folhagem em tons naturais
   const treeFoliageMats = [
@@ -3245,12 +3620,17 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
   function addBuilding3D(bx, bz, bw, bwz, bh, isHospital){
     const bg = new THREE.Group();
     bg.position.set(bx, 0, bz);
-    const pbr = isHospital ? bldPBR2 : ((Math.abs(bx*13+bz*7)%3===0) ? bldPBR3 : bldPBR1);
-    const bodyMat = new THREE.MeshStandardMaterial({
-      map: pbr.diff, roughnessMap: pbr.rough, roughness: 0.78, metalness: 0.25
-    });
-    const body = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bwz), bodyMat);
-    body.position.y = bh/2; body.castShadow = true; body.receiveShadow = true;
+    let body;
+    if(isHospital){
+      body = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bwz), new THREE.MeshStandardMaterial({
+        map: bldPBR2.diff, roughnessMap: bldPBR2.rough, roughness: 0.78, metalness: 0.25
+      }));
+      body.position.y = bh/2;
+    } else {
+      body = new THREE.Mesh(unitBox, facadeMat);
+      body.scale.set(bw, bh, bwz);
+    }
+    body.castShadow = true; body.receiveShadow = true;
     bg.add(body);
 
     const roof = new THREE.Mesh(new THREE.BoxGeometry(bw+0.6, 0.4, bwz+0.6), new THREE.MeshStandardMaterial({color: 0x2a313b, roughness: 0.85}));
@@ -3502,17 +3882,240 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
     }
   }
 
+  // =========================================================================
+  // CIDADE DENSA: quadras de 90 m dos dois lados do corredor de voo (a partir de 160 m do eixo),
+  // prédios e árvores instanciados (um único desenho para centenas de cópias) e carros circulando.
+  // É só cenário: não entra na física nem nas colisões das missões.
+  // =========================================================================
+  const CITY_X0 = -360, CITY_PITCH = 90, CITY_ZIN = 160;
+  function planCity(w){
+    const cols = w.sea ? Math.max(0, Math.floor((w.sea.shore - 80 - CITY_X0)/CITY_PITCH)) : 29;
+    const rows = IS_PHONE ? 4 : 6;
+    return {cols, rows, x0: CITY_X0, x1: CITY_X0 + cols*CITY_PITCH, z0: CITY_ZIN, z1: CITY_ZIN + rows*CITY_PITCH, on: cols > 0 ? 1 : 0};
+  }
+  const cityTrunkGeo = new THREE.CylinderGeometry(0.22, 0.36, 1, 6); cityTrunkGeo.translate(0, 0.5, 0);
+  const cityCrownGeo = new THREE.IcosahedronGeometry(1, 1);
+  const cityCrownMat = new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 0.88});
+  const cityCarGeo = new THREE.BoxGeometry(4.2, 1.25, 1.8); cityCarGeo.translate(0, 0.72, 0);
+  const cityCarMat = new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 0.28, metalness: 0.35});
+  const cityRoofMat = new THREE.MeshStandardMaterial({color: 0x8a929c, roughness: 0.6, metalness: 0.3});
+  const parkGeo = new THREE.PlaneGeometry(68, 68); parkGeo.rotateX(-Math.PI/2);
+  const parkMat = new THREE.MeshStandardMaterial({color: 0x3f6b33, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -1});
+
+  function buildCity3D(w, city){
+    if(!city.on) return;
+    const downtownX = w.party ? -6000 : 780; // na missão da fazenda a região vira bairro baixo
+    const blds = [], roofs = [], trees = [];
+    const m4 = new THREE.Matrix4(), qI = new THREE.Quaternion(), v1 = new THREE.Vector3(), v2 = new THREE.Vector3(), col = new THREE.Color();
+    for(let bi=0; bi<city.cols; bi++) for(let bj=0; bj<city.rows; bj++) for(const side of [-1, 1]){
+      const bx = city.x0 + CITY_PITCH*(bi + 0.5), bzA = city.z0 + CITY_PITCH*(bj + 0.5), bz = side*bzA;
+      if(w.terrain && bx > 1440 && bzA < 340) continue; // deixa a montanha livre
+      const hb = hashN(bi*3 + side, bj*7 + 11);
+      const core = Math.exp(-Math.pow((bx - downtownX)/560, 2) - Math.pow((bzA - 300)/360, 2));
+      if(hb > 0.90){
+        // Quadra-parque: gramado e arvoredo
+        const pk = new THREE.Mesh(parkGeo, parkMat); pk.position.set(bx, 0.03, bz); pk.receiveShadow = true; worldGroup.add(pk);
+        for(let t=0; t<9; t++) trees.push([bx + (hashN(bx + t, bz) - 0.5)*58, bz + (hashN(bx, bz + t*3.1) - 0.5)*58, 7 + hashN(t, bx)*7]);
+        continue;
+      }
+      for(let sx=0; sx<2; sx++) for(let sz=0; sz<2; sz++){
+        const r1 = hashN(bx + sx*13.3, bz + sz*7.7), r2 = hashN(bx*0.7 + sx*5.1, bz*1.3 + sz*3.9), r3 = hashN(bx + sx*1.7 + 4, bz - sz*2.3);
+        if(r1 < 0.10) continue;
+        const fw = 18 + r2*12, fd = 18 + r3*12;
+        const tall = r1 < 0.12 + core*0.75;
+        const h = tall ? 28 + r2*r3*150*core + r3*22 : 6.5 + r3*13;
+        const px = bx + (sx - 0.5)*35 + (r2 - 0.5)*4, pz = bz + (sz - 0.5)*35 + (r3 - 0.5)*4;
+        blds.push([px, pz, fw, h, fd]);
+        if(h > 55 && r2 > 0.4) blds.push([px, pz, fw*0.6, h + 8 + r3*14, fd*0.6]); // coroamento recuado
+        roofs.push([px + fw*0.2, h, pz - fd*0.2, 3 + r1*4, 1.2 + r2*1.6, 3 + r3*3]);
+      }
+    }
+    if(blds.length){
+      const im = new THREE.InstancedMesh(unitBox, facadeMat, blds.length);
+      blds.forEach((b, i)=>{ m4.compose(v1.set(b[0], 0, b[1]), qI, v2.set(b[2], b[3], b[4])); im.setMatrixAt(i, m4); });
+      im.castShadow = true; im.receiveShadow = true; worldGroup.add(im);
+      const rm = new THREE.InstancedMesh(unitBox, cityRoofMat, roofs.length);
+      roofs.forEach((b, i)=>{ m4.compose(v1.set(b[0], b[1], b[2]), qI, v2.set(b[3], b[4], b[5])); rm.setMatrixAt(i, m4); });
+      rm.castShadow = false; worldGroup.add(rm);
+    }
+
+    // Arborização das calçadas nas ruas mais próximas do corredor de voo
+    const treeRows = IS_PHONE ? 1 : 3;
+    for(let j=0; j<=treeRows; j++) for(const side of [-1, 1]) for(const off of [-8.6, 8.6]){
+      const tz = side*(city.z0 + CITY_PITCH*j + off);
+      for(let x = city.x0 + 16; x < city.x1 - 10; x += 30){
+        const m = ((x - city.x0) % CITY_PITCH + CITY_PITCH) % CITY_PITCH;
+        if(m < 12 || m > CITY_PITCH - 12) continue; // esquina livre
+        if(w.terrain && x > 1440) continue;
+        trees.push([x, tz, 5.5 + hashN(x, tz)*4]);
+      }
+    }
+    if(trees.length){
+      const tr = new THREE.InstancedMesh(cityTrunkGeo, trunkMat, trees.length);
+      const cr = new THREE.InstancedMesh(cityCrownGeo, cityCrownMat, trees.length);
+      trees.forEach((t, i)=>{
+        const h = t[2], r = h*0.34;
+        m4.compose(v1.set(t[0], 0, t[1]), qI, v2.set(1, h*0.55, 1)); tr.setMatrixAt(i, m4);
+        m4.compose(v1.set(t[0], h*0.72, t[1]), qI, v2.set(r, r*1.15, r)); cr.setMatrixAt(i, m4);
+        const g = hashN(t[0]*1.3, t[1]*0.7);
+        col.setRGB(0.10 + g*0.07, 0.24 + g*0.14, 0.09 + g*0.05); cr.setColorAt(i, col);
+      });
+      cr.castShadow = !IS_PHONE; cr.receiveShadow = true;
+      worldGroup.add(tr); worldGroup.add(cr);
+    }
+
+    // Trânsito nas avenidas paralelas ao voo (as duas mais próximas de cada lado)
+    const carCols = [[0.72,0.08,0.07],[0.07,0.20,0.48],[0.80,0.82,0.84],[0.05,0.06,0.08],[0.62,0.40,0.05],[0.30,0.31,0.33],[0.85,0.85,0.80]];
+    const lanes = [];
+    for(let j=0; j<2; j++) for(const side of [-1, 1]) for(const dir of [-1, 1]) lanes.push({z: side*(city.z0 + CITY_PITCH*j) + dir*2.7, dir});
+    const perLane = IS_PHONE ? 6 : 14;
+    const cm = new THREE.InstancedMesh(cityCarGeo, cityCarMat, lanes.length*perLane);
+    const list = [];
+    lanes.forEach((ln, li)=>{
+      for(let k=0; k<perLane; k++){
+        const idx = li*perLane + k;
+        const c = carCols[(li*3 + k*5) % carCols.length];
+        col.setRGB(c[0], c[1], c[2]); cm.setColorAt(idx, col);
+        list.push({x: city.x0 + (city.x1 - city.x0)*hashN(li + 1.7, k*2.3), z: ln.z, dir: ln.dir, spd: 9 + hashN(k, li)*8});
+      }
+    });
+    cm.castShadow = !IS_PHONE; cm.frustumCulled = false; worldGroup.add(cm);
+    cityCars = {mesh: cm, list, x0: city.x0, x1: city.x1, m4};
+  }
+
+  // =========================================================================
+  // MAR VIVO: veleiros, pesqueiros, cargueiros ao longe, boias de canal, ilhotas de pedra,
+  // píer com barcos atracados e guarda-sóis na praia. Tudo balança com a mesma onda da física (waveY).
+  // Fica fora do corredor das missões (|z| >= 55), então não muda resgate nem pouso no navio.
+  // =========================================================================
+  function hullGeo(L, W, H){
+    const sh = new THREE.Shape();
+    sh.moveTo(-L/2, -W/2); sh.lineTo(L*0.18, -W/2); sh.lineTo(L/2, 0); sh.lineTo(L*0.18, W/2); sh.lineTo(-L/2, W/2); sh.closePath();
+    const g = new THREE.ExtrudeGeometry(sh, {depth: H, bevelEnabled: false});
+    g.rotateX(-Math.PI/2);
+    return g;
+  }
+  function triGeo(ax, ay, bx, by, cx, cy){
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(new Float32Array([ax, ay, 0, bx, by, 0, cx, cy, 0]), 3));
+    g.computeVertexNormals();
+    return g;
+  }
+  function addSeaLife3D(w){
+    const sh = w.sea.shore;
+    const mWhite = new THREE.MeshStandardMaterial({color: 0xf1f3f5, roughness: 0.42});
+    const mSail = new THREE.MeshStandardMaterial({color: 0xfbfaf3, roughness: 0.85, side: THREE.DoubleSide});
+    const mWood = new THREE.MeshStandardMaterial({color: 0x6e4c2f, roughness: 0.9});
+    const mHullDark = new THREE.MeshStandardMaterial({color: 0x1c2636, roughness: 0.5, metalness: 0.2});
+    const mRock = new THREE.MeshStandardMaterial({color: 0x5d5a55, roughness: 0.95, flatShading: true});
+    const mFoam = new THREE.MeshBasicMaterial({color: 0xe9f6ff, transparent: true, opacity: 0.5, depthWrite: false, side: THREE.DoubleSide});
+    const hullCols = [0xb6322b, 0x1f5b8c, 0x2c7a52, 0xd9a521, 0xf1f3f5, 0x23364d];
+    const bob = (mesh, x, z, y0, rk, extra)=>{ mesh.position.set(x, y0, z); worldGroup.add(mesh); seaBobbers.push(Object.assign({mesh, x, z, y0, rk, ph: x*0.13 + z*0.07}, extra || {})); };
+    const sides = (i)=>(i%2 === 0 ? 1 : -1);
+    const nSail = IS_PHONE ? 7 : 16, nFish = IS_PHONE ? 3 : 8, nBuoy = IS_PHONE ? 8 : 16;
+
+    // Veleiros
+    const gSailHull = hullGeo(8.5, 2.5, 1.0), gMast = new THREE.CylinderGeometry(0.07, 0.09, 11, 6);
+    const gMain = triGeo(-3.4, 1.9, 0.25, 1.9, 0.25, 11.2), gJib = triGeo(0.45, 1.6, 4.0, 1.4, 0.45, 9.4);
+    for(let i=0; i<nSail; i++){
+      const g = new THREE.Group();
+      const x = sh + 90 + hashN(i, 3.1)*1500, z = sides(i)*(60 + hashN(i*2.3, 9)*380);
+      const hull = new THREE.Mesh(gSailHull, i%3 === 0 ? mHullDark : mWhite); hull.position.y = -0.35; g.add(hull);
+      const cab = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.55, 1.5), mWhite); cab.position.set(-0.4, 0.9, 0); g.add(cab);
+      const mast = new THREE.Mesh(gMast, mWhite); mast.position.set(0.3, 6.1, 0); g.add(mast);
+      g.add(new THREE.Mesh(gMain, mSail)); g.add(new THREE.Mesh(gJib, mSail));
+      g.rotation.y = hashN(i, 7)*6.28;
+      enableShadowsRecursive(g, !IS_PHONE, false);
+      bob(g, x, z, 0, 0.55, {vx: (hashN(i, 1) - 0.5)*5, xMin: sh + 60, xMax: sh + 1750});
+    }
+    // Pesqueiros
+    const gFishHull = hullGeo(12, 3.8, 1.9);
+    for(let i=0; i<nFish; i++){
+      const g = new THREE.Group();
+      const x = sh + 140 + hashN(i, 12.7)*1300, z = sides(i + 1)*(75 + hashN(i*4.1, 2)*330);
+      const hull = new THREE.Mesh(gFishHull, new THREE.MeshStandardMaterial({color: hullCols[i % hullCols.length], roughness: 0.6})); hull.position.y = -0.7; g.add(hull);
+      const wh = new THREE.Mesh(new THREE.BoxGeometry(3.2, 2.3, 2.6), mWhite); wh.position.set(-2.6, 2.3, 0); g.add(wh);
+      const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 5.5, 6), mWood); mast.position.set(1.6, 3.9, 0); g.add(mast);
+      const boom = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 5, 5), mWood); boom.rotation.z = 1.05; boom.position.set(3.2, 3.6, 0); g.add(boom);
+      g.rotation.y = hashN(i, 17)*6.28;
+      enableShadowsRecursive(g, !IS_PHONE, false);
+      bob(g, x, z, 0, 0.4, {});
+    }
+    // Cargueiros ao longe (dão escala ao horizonte)
+    const boxCols = [0xb5372e, 0x2d6fa3, 0xd9a521, 0x3d8a5a, 0xdfe3e7, 0x8c4a2f];
+    for(let i=0; i<2; i++){
+      const g = new THREE.Group();
+      const L = 150;
+      const hull = new THREE.Mesh(hullGeo(L, 22, 10), i ? mHullDark : new THREE.MeshStandardMaterial({color: 0x7d2a22, roughness: 0.6})); hull.position.y = -4; g.add(hull);
+      const bridge = new THREE.Mesh(new THREE.BoxGeometry(14, 17, 18), mWhite); bridge.position.set(-L/2 + 14, 14.5, 0); g.add(bridge);
+      const funnel = new THREE.Mesh(new THREE.CylinderGeometry(2, 2.4, 7, 10), mHullDark); funnel.position.set(-L/2 + 9, 26, 0); g.add(funnel);
+      for(let c=0; c<10; c++){
+        const hh = 5 + (c*7 % 3)*2.6;
+        const stack = new THREE.Mesh(new THREE.BoxGeometry(10.5, hh, 18), new THREE.MeshStandardMaterial({color: boxCols[(c + i*2) % boxCols.length], roughness: 0.7}));
+        stack.position.set(-L/2 + 32 + c*11.2, 6 + hh/2, 0); g.add(stack);
+      }
+      g.rotation.y = i ? Math.PI : 0;
+      bob(g, sh + 500 + i*700, (i ? -1 : 1)*(520 + i*90), 0, 0.03, {vx: i ? -3.2 : 2.6, xMin: sh + 250, xMax: sh + 2600, yk: 0.15});
+    }
+    // Boias de canal: verdes de um lado, vermelhas do outro
+    const gBuoyBody = new THREE.CylinderGeometry(0.55, 0.75, 1.6, 10), gBuoyTop = new THREE.ConeGeometry(0.5, 1.6, 8);
+    const mBR = new THREE.MeshStandardMaterial({color: 0xd3261c, roughness: 0.5}), mBG = new THREE.MeshStandardMaterial({color: 0x1f9a4a, roughness: 0.5});
+    for(let i=0; i<nBuoy; i++){
+      const g = new THREE.Group(), m = i%2 ? mBR : mBG;
+      const b1 = new THREE.Mesh(gBuoyBody, m); b1.position.y = 0.5; g.add(b1);
+      const b2 = new THREE.Mesh(gBuoyTop, m); b2.position.y = 2.1; g.add(b2);
+      bob(g, sh + 90 + Math.floor(i/2)*110, sides(i)*58, 0, 0.9, {});
+    }
+    // Ilhotas de pedra com anel de espuma
+    const gRock = new THREE.DodecahedronGeometry(1, 1), gRing = new THREE.RingGeometry(0.92, 1.25, 28);
+    [[320, 210, 26], [760, -260, 34], [1180, 300, 22], [1500, -180, 30], [540, -400, 18]].forEach((r, i)=>{
+      if(IS_PHONE && i > 2) return;
+      const g = new THREE.Group(); g.position.set(sh + r[0], -1.2, r[1]);
+      const rock = new THREE.Mesh(gRock, mRock); rock.scale.set(r[2], r[2]*0.42, r[2]*0.72); rock.rotation.y = i*1.3; rock.castShadow = true; g.add(rock);
+      const r2 = new THREE.Mesh(gRock, mRock); r2.scale.set(r[2]*0.45, r[2]*0.3, r[2]*0.4); r2.position.set(r[2]*0.8, 0, r[2]*0.3); r2.rotation.y = i*2.1; g.add(r2);
+      const ring = new THREE.Mesh(gRing, mFoam); ring.rotation.x = -Math.PI/2; ring.scale.set(r[2]*1.05, r[2]*0.78, 1); ring.position.y = 1.32; ring.rotation.z = i*1.3; g.add(ring);
+      worldGroup.add(g);
+    });
+    // Píer de madeira com barcos atracados
+    const pz = 96;
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(72, 0.35, 4.2), mWood); deck.position.set(sh + 30, 1.5, pz); deck.castShadow = true; deck.receiveShadow = true; worldGroup.add(deck);
+    for(let k=0; k<7; k++) for(const s of [-1.8, 1.8]){
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.2, 5, 6), mWood); post.position.set(sh - 2 + k*11, -0.6, pz + s); worldGroup.add(post);
+    }
+    const gDinghy = hullGeo(5.2, 1.9, 0.8);
+    for(let k=0; k<4; k++){
+      const d = new THREE.Mesh(gDinghy, new THREE.MeshStandardMaterial({color: hullCols[(k + 2) % hullCols.length], roughness: 0.6}));
+      d.rotation.y = Math.PI/2;
+      bob(d, sh + 22 + k*12, pz + (k%2 ? -4.4 : 4.4), -0.3, 0.7, {});
+    }
+    // Guarda-sóis na faixa de areia
+    const gUmb = new THREE.ConeGeometry(1.5, 0.7, 10), gPole = new THREE.CylinderGeometry(0.04, 0.04, 2.1, 5);
+    const umbCols = [0xe5484d, 0xf2c037, 0x2f9bd6, 0xf28a2e, 0xffffff];
+    const nUmb = IS_PHONE ? 10 : 26;
+    for(let k=0; k<nUmb; k++){
+      const uz = (k%2 ? -1 : 1)*(34 + Math.floor(k/2)*17 + hashN(k, 5)*6), ux = sh - 14 + hashN(k, 8)*9;
+      const pole = new THREE.Mesh(gPole, mWhite); pole.position.set(ux, 1.05, uz); worldGroup.add(pole);
+      const top = new THREE.Mesh(gUmb, new THREE.MeshStandardMaterial({color: umbCols[k % umbCols.length], roughness: 0.8})); top.position.set(ux, 2.2, uz); top.castShadow = !IS_PHONE; worldGroup.add(top);
+    }
+  }
+
   function rebuildWorld3D(){
-    while(worldGroup.children.length > 0) worldGroup.remove(worldGroup.children[0]);
+    while(worldGroup.children.length > 0){
+      const ch = worldGroup.children[0];
+      worldGroup.remove(ch);
+      if(ch.isInstancedMesh && ch.dispose) ch.dispose();
+    }
+    seaBobbers = []; cityCars = null;
     seaMesh = null; farSeaMesh = null; boatGroup = null; windsockCone = null; hoistLine = null;
     towerBeacon = null; lighthouseBeacon = null; boatWake = null;
     trafficCars = []; cloudGroups = []; birds = []; smokePuffs = []; partyBulbs = []; ambSirens = []; papiLights = [];
     const w = mission ? mission.world : {padX:0,trees:[],zone:null};
 
+    const city = planCity(w);
     const gndMat = new THREE.MeshStandardMaterial({
       map: grassPBR.diff, bumpMap: grassPBR.bump, bumpScale: 0.18, roughness: 0.92, metalness: 0.0
     });
-    patchGroundMaterial(gndMat, grassPBR.avg);
+    patchGroundMaterial(gndMat, grassPBR.avg, city);
 
     if(w.sea){
       const landLen = w.sea.shore + 2200;
@@ -3720,20 +4323,23 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
       const farSeaMat = new THREE.MeshPhysicalMaterial({
         color: 0x0a3d66,
         normalMap: seaNormalTex2,
-        normalScale: new THREE.Vector2(0.85, 0.85),
-        roughness: 0.12,
-        metalness: 0.18,
-        clearcoat: 1.0,
-        clearcoatRoughness: 0.06
+        normalScale: new THREE.Vector2(0.55, 0.55),
+        roughness: 0.30,
+        metalness: 0.10,
+        clearcoat: 0.25,
+        clearcoatRoughness: 0.35,
+        envMapIntensity: 0.75,
+        specularIntensity: 0.55
       });
+      patchSeaMaterial(farSeaMat);
       farSeaMesh = new THREE.Mesh(new THREE.PlaneGeometry(4600, 4200), farSeaMat);
       farSeaMesh.rotation.x = -Math.PI/2;
-      farSeaMesh.position.set(w.sea.shore + 2310, -0.38, 0);
+      farSeaMesh.position.set(w.sea.shore + 2310, -1.35, 0); // abaixo do vale mais fundo das ondas: não vaza mais por baixo da malha animada
       worldGroup.add(farSeaMesh);
 
       // Malha costeira e de resgate em ALTA DEFINIÇÃO (150 x 64 segmentos = ondas detalhadas e suaves!)
       const seaW = 1900, seaD = 960;
-      const seaGeo = new THREE.PlaneGeometry(seaW, seaD, 150, 64);
+      const seaGeo = new THREE.PlaneGeometry(seaW, seaD, IS_PHONE ? 150 : 230, IS_PHONE ? 64 : 110);
       seaGeo.rotateX(-Math.PI/2);
       const count = seaGeo.attributes.position.count;
       const colors = new Float32Array(count * 3);
@@ -3741,13 +4347,16 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
       const seaMat = new THREE.MeshPhysicalMaterial({
         vertexColors: true,
         normalMap: seaNormalTex,
-        normalScale: new THREE.Vector2(1.15, 1.15),
-        roughness: 0.08,
-        metalness: 0.20,
-        clearcoat: 1.0,
-        clearcoatRoughness: 0.05,
+        normalScale: new THREE.Vector2(0.48, 0.48),
+        roughness: 0.26,
+        metalness: 0.10,
+        clearcoat: 0.25,
+        clearcoatRoughness: 0.32,
+        envMapIntensity: 0.75,
+        specularIntensity: 0.55,
         transparent: false
       });
+      patchSeaMaterial(seaMat);
       seaMesh = new THREE.Mesh(seaGeo, seaMat);
       seaMesh.position.set(w.sea.shore + seaW/2 - 6, 0.05, 0);
       seaMesh.receiveShadow = true;
@@ -3813,9 +4422,12 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
 
     addAmbientClouds3D();
     addAmbientBirds3D();
+    buildCity3D(w, city);
+    if(w.sea) addSeaLife3D(w);
   }
 
   window.rebuildWorld3D = rebuildWorld3D;
+  window._r22dbg = {scene, sunLight, renderer, worldGroup};
   rebuildWorld3D();
 
   let camOrbitAz = 0, camOrbitEl = 0.24, draggingCam = false, lastPt = {x:0,y:0};
@@ -4137,7 +4749,7 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
         const baseB = lerp(lerp(0.68, 0.54, shallowK), 0.38, deepK);
 
         // Espuma nas cristas das ondas + linhas de arrebentação na beira da praia
-        const crestFoam = clamp((wy - 0.38) * 1.9, 0, 0.72);
+        const crestFoam = clamp((wy - 0.52) * 1.1, 0, 0.26); // crista só clareia; a espuma solta vem do shader
         const surfWave = distShore < 24 ? clamp((1 - distShore/24) * (0.55 + 0.45*Math.sin(tSim*2.8 - distShore*0.42)), 0, 0.92) : 0;
         const f = clamp(Math.max(crestFoam, surfWave), 0, 0.92);
 
@@ -4150,6 +4762,25 @@ float gNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
     if(w.boat && boatGroup){
       boatGroup.position.set(boatX(), boatDeck() - w.boat.deck, 0);
       boatGroup.rotation.z = Math.sin(tSim*w.boat.om)*0.03;
+    }
+    seaTimeU.value = tSim;
+    for(const b of seaBobbers){
+      if(b.vx){ b.x += b.vx*0.016; if(b.x > b.xMax) b.x = b.xMin; if(b.x < b.xMin) b.x = b.xMax; }
+      const wy = waveY(b.x, b.z);
+      b.mesh.position.set(b.x, b.y0 + wy*(b.yk === undefined ? 1 : b.yk), b.z);
+      b.mesh.rotation.z = (waveY(b.x + 3, b.z) - waveY(b.x - 3, b.z))*0.16*b.rk;
+      b.mesh.rotation.x = Math.sin(tSim*0.9 + b.ph)*0.07*b.rk;
+    }
+    if(cityCars){
+      const cc = cityCars;
+      for(let i=0; i<cc.list.length; i++){
+        const c = cc.list[i];
+        c.x += c.dir*c.spd*0.016;
+        if(c.x > cc.x1) c.x = cc.x0; else if(c.x < cc.x0) c.x = cc.x1;
+        cc.m4.makeTranslation(c.x, 0, c.z);
+        cc.mesh.setMatrixAt(i, cc.m4);
+      }
+      cc.mesh.instanceMatrix.needsUpdate = true;
     }
     if(hoistLine){
       if(mission&&mission.id==="sea"&&met&&met.phase===1&&met.hoist>0.05&&!heli.onGround){
