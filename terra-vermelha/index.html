@@ -121,7 +121,7 @@ table.res{width:100%;border-collapse:collapse;margin:10px 0 2px;font-size:13px;}
   <div>
     <div id="cards" class="cards"></div>
     <div class="opts">
-      <button class="chip" id="oTilt">Giroscópio</button><button class="chip" id="oPed"></button><button class="chip" id="oSim"></button><button class="chip" id="oGfx"></button><button class="chip" id="oSnd"></button>
+      <button class="chip" id="oTilt">Giroscópio</button><button class="chip" id="oPed"></button><button class="chip" id="oSim"></button><button class="chip" id="oGfx"></button><button class="chip" id="oShd"></button><button class="chip" id="oSnd"></button>
       <span class="st" id="oStamps"></span>
     </div>
   </div>
@@ -137,7 +137,7 @@ table.res{width:100%;border-collapse:collapse;margin:10px 0 2px;font-size:13px;}
 <div id="pause" class="ov sheet-wrap"><div class="sheet">
   <div class="k">Pausa</div><h2 id="paName"></h2>
   <div class="row"><button class="btn go" id="paGo">CONTINUAR</button><button class="btn" id="paRestart">REINICIAR</button><button class="btn" id="paMenu">MENU</button></div>
-  <div class="row"><button class="btn" id="paMap">MAPA</button><button class="btn" id="paPed"></button><button class="btn" id="paSim"></button><button class="btn" id="paGfx"></button><button class="btn" id="paSnd"></button><button class="btn" id="paEng">CORTAR MOTOR (TREINO)</button></div>
+  <div class="row"><button class="btn" id="paMap">MAPA</button><button class="btn" id="paPed"></button><button class="btn" id="paSim"></button><button class="btn" id="paGfx"></button><button class="btn" id="paShd"></button><button class="btn" id="paSnd"></button><button class="btn" id="paEng">CORTAR MOTOR (TREINO)</button></div>
   <div class="keys" id="paKeys"></div>
 </div></div>
 
@@ -161,7 +161,7 @@ table.res{width:100%;border-collapse:collapse;margin:10px 0 2px;font-size:13px;}
    TERRA VERMELHA — piloto de fazenda no cerrado (Robinson R22)
    Núcleo: constantes da física, utilidades, ruído e estado global.
    ========================================================================= */
-const VERSION = "1.2";
+const VERSION = "1.3";
 
 // ---- Constantes físicas do R22 (as mesmas do Checkride Trainer) ----
 const KT = 0.514444, FT = 0.3048, MS2FPM = 196.85, G = 9.81, RHO = 1.225;
@@ -261,7 +261,7 @@ let camMode = 0;
 
 // ---- Progresso salvo no aparelho ----
 const SAVE_KEY = "terra_vermelha_v1";
-let save = { medals: {}, best: {}, stamps: {}, opt: { autoPedal: false, gfx: -1, sound: true, sim: false } };
+let save = { medals: {}, best: {}, stamps: {}, opt: { autoPedal: false, gfx: -1, sound: true, sim: false, shd: 1 } };
 try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); if (s) { save = Object.assign(save, s); save.opt = Object.assign({ autoPedal: false, gfx: -1, sound: true, sim: false }, s.opt || {}); } } catch (_) { }
 function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (_) { } }
 
@@ -1098,7 +1098,7 @@ function engToggle() {
    Céu por shader, relevo com sombra "assada" por horário, água com margem e reflexo,
    árvores por instância, partículas (poeira do rotor, fumaça, água, chuva).
    ========================================================================= */
-const GFX = { q: 1, phone: false, w: 1, h: 1, ready: false, tod: null, sunDir: null, night: false };
+const GFX = { q: 1, phone: false, w: 1, h: 1, ready: false, tod: null, sunDir: null, night: false, shOn: null, shSize: 0, shTexel: 0.125 };
 let renderer, scene, camera, sunLight, hemiLight, skyMesh, skyU, waterMesh, waterU, terrainMat, terrainU;
 let terrainChunks = [], shadeArr = null, treeMeshes = [], cloudMesh = null, tuftMesh = null, blobShadow = null;
 let burnTex = null, beacons = [], heliRoot = null;
@@ -1165,7 +1165,49 @@ GB.prototype.mesh = function (mat, shadow) { const m = new THREE.Mesh(this.geo()
 const GLSL_NOISE = `
 float h21(vec2 p){ p = fract(p*vec2(123.34, 456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
 float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
-  return mix(mix(h21(i), h21(i+vec2(1.0,0.0)), f.x), mix(h21(i+vec2(0.0,1.0)), h21(i+vec2(1.0,1.0)), f.x), f.y); }`;
+  return mix(mix(h21(i), h21(i+vec2(1.0,0.0)), f.x), mix(h21(i+vec2(0.0,1.0)), h21(i+vec2(1.0,1.0)), f.x), f.y); }
+// hash periodico (repete a cada 2048 celulas): sem isso, longe do centro do mapa o
+// grao fino degenera em listras, porque o float perde precisao em coordenada grande
+float h21p(vec2 p){ p = mod(p, 2048.0); vec3 q = fract(vec3(p.xyx)*0.1031); q += dot(q, q.yzx+33.33); return fract((q.x+q.y)*q.z); }
+float vnp(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
+  return mix(mix(h21p(i), h21p(i+vec2(1.0,0.0)), f.x), mix(h21p(i+vec2(0.0,1.0)), h21p(i+vec2(1.0,1.0)), f.x), f.y); }
+// textura do chao em tres escalas (2 m, 50 cm, 15 cm). Cada escala some quando um pixel
+// da tela passa a cobrir mais do que ela: assim aparece de perto e nunca cintila de longe.
+float grain3(vec2 w, float px){
+  float f1 = 1.0 - smoothstep(0.30, 2.00, px);
+  float f2 = 1.0 - smoothstep(0.075, 0.50, px);
+  float f3 = 1.0 - smoothstep(0.020, 0.13, px);
+  float g = (vnp(w*0.42)-0.5)*0.26*f1 + (vnp(w*1.90)-0.5)*0.30*f2;
+  if (f3 > 0.004) g += (vnp(w*6.80)-0.5)*0.30*f3;
+  return g;
+}`;
+
+// Pinta o mesmo grao do relevo em qualquer material horizontal (pista, estradas, heliponto,
+// calcada da cidade). Sem isso a pista de terra e o heliponto ficam de cor lisa, e de perto
+// nao sobra nada na tela que diga a que altura o helicoptero esta.
+function grainMat(mat, k) {
+  mat.onBeforeCompile = sh => {
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vGP;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\n vGP = (modelMatrix*vec4(transformed,1.0)).xyz;");
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vGP;" + GLSL_NOISE)
+      .replace("#include <color_fragment>", "#include <color_fragment>\n diffuseColor.rgb *= 1.0 + grain3(vGP.xz, max(fwidth(vGP.x), fwidth(vGP.z)))*" + k.toFixed(2) + ";");
+  };
+  mat.customProgramCacheKey = () => "grain" + k;
+  return mat;
+}
+
+// Silhueta do helicóptero (disco do rotor + cauda) com borda suave, para a mancha de sombra
+// usada quando a sombra de verdade está desligada. Um círculo de borda dura não lê como sombra.
+function blobTex() {
+  const cv = document.createElement("canvas"); cv.width = cv.height = 64; const g = cv.getContext("2d");
+  g.filter = "blur(1.6px)"; g.fillStyle = "#000";
+  g.beginPath(); g.moveTo(31, 29.4); g.lineTo(9, 30.9); g.lineTo(9, 33.1); g.lineTo(31, 34.6); g.closePath(); g.fill();
+  g.beginPath(); g.ellipse(9, 32, 3.4, 1.3, 0, 0, 6.2832); g.fill();
+  const rg = g.createRadialGradient(32, 32, 4, 32, 32, 30);
+  rg.addColorStop(0, "rgba(0,0,0,1)"); rg.addColorStop(0.55, "rgba(0,0,0,0.95)"); rg.addColorStop(0.84, "rgba(0,0,0,0.5)"); rg.addColorStop(1, "rgba(0,0,0,0)");
+  g.fillStyle = rg; g.beginPath(); g.arc(32, 32, 30, 0, 6.2832); g.fill();
+  const t = new THREE.CanvasTexture(cv); t.minFilter = THREE.LinearFilter; t.generateMipmaps = false; return t;
+}
 
 function initGfx() {
   const cv = document.getElementById("c3d");
@@ -1179,20 +1221,18 @@ function initGfx() {
   camera.position.set(-260, 60, 1320);
   hemiLight = new THREE.HemisphereLight(0xffffff, 0x887755, 1); scene.add(hemiLight);
   sunLight = new THREE.DirectionalLight(0xffffff, 3); scene.add(sunLight); scene.add(sunLight.target);
-  sunLight.shadow.mapSize.set(2048, 2048);
-  const sc = sunLight.shadow.camera; sc.left = -85; sc.right = 85; sc.top = 85; sc.bottom = -85; sc.near = 10; sc.far = 900;
-  sunLight.shadow.bias = -0.0004; sunLight.shadow.normalBias = 0.6;
+  sunLight.shadow.camera.near = 10; sunLight.shadow.camera.far = 900;
 
   GB.unitBox = new THREE.BoxGeometry(1, 1, 1);
   MAT.flat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
   MAT.flat2 = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide });
   MAT.glow = new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false });
-  MAT.decal = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -8 });
+  MAT.decal = grainMat(new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -8 }), 0.8);
   MAT.glass = new THREE.MeshLambertMaterial({ color: 0x24465c, transparent: true, opacity: 0.42, flatShading: true, depthWrite: false });
 
-  buildSky(); buildTerrain(); buildWater(); buildTrees(); buildClouds(); buildTufts(); buildParticles(); buildBeacons();
-  blobShadow = new THREE.Mesh(new THREE.CircleGeometry(1, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -6 }));
-  blobShadow.rotation.x = -Math.PI / 2; blobShadow.renderOrder = 2; scene.add(blobShadow);
+  buildSky(); buildTerrain(); buildWater(); buildTrees(); buildClouds(); buildTufts(); buildStones(); buildParticles(); buildBeacons();
+  blobShadow = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ map: blobTex(), transparent: true, opacity: 0.35, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -6 }));
+  blobShadow.rotation.order = "YXZ"; blobShadow.rotation.x = -Math.PI / 2; blobShadow.renderOrder = 2; scene.add(blobShadow);
   applyQuality();
   window.addEventListener("resize", resizeGfx); resizeGfx();
   GFX.ready = true;
@@ -1206,8 +1246,33 @@ function resizeGfx(fw, fh) {
   camera.aspect = w / h; camera.updateProjectionMatrix();
   if (typeof resizeHud === "function") resizeHud(w, h);
 }
+// A sombra projetada é o maior indicador de altura perto do chão. Até a 1.2 ela só existia
+// no gráfico ALTO: no celular (MÉDIO) sobrava uma mancha redonda, e a altura ficava no chute.
+function setShadows() {
+  const on = save.opt.shd !== 0, hi = GFX.q >= 2, size = hi ? 2048 : 1024, half = hi ? 90 : 60;
+  if (GFX.shOn === on && GFX.shSize === size) return;
+  GFX.shOn = on; GFX.shSize = size; GFX.shTexel = half * 2 / size;
+  // no celular vale mais a borda um pouco mais dura (PCF) do que o 1 ms a mais do filtro suave
+  const tp = hi ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+  if (renderer.shadowMap.type !== tp) { renderer.shadowMap.type = tp; scene.traverse(o => { if (o.isMesh && o.material && !Array.isArray(o.material)) o.material.needsUpdate = true; }); }
+  if (sunLight.shadow.map) { sunLight.shadow.map.dispose(); sunLight.shadow.map = null; }
+  sunLight.shadow.mapSize.set(size, size);
+  const sc = sunLight.shadow.camera; sc.left = -half; sc.right = half; sc.top = half; sc.bottom = -half; sc.updateProjectionMatrix();
+  sunLight.shadow.bias = -0.0002; sunLight.shadow.normalBias = 0.22;
+  sunLight.castShadow = on;
+}
+function toggleShadows() { save.opt.shd = save.opt.shd === 0 ? 1 : 0; persist(); setShadows(); return save.opt.shd !== 0; }
+// Por que até a 1.2 NENHUMA sombra aparecia no chão, mesmo no gráfico ALTO: as malhas feitas
+// à mão (relevo, pista, casas, cidade) são de faces chapadas e nunca tiveram o vetor da normal.
+// O desvio que o Three.js aplica na consulta da sombra divide por esse vetor; sem ele a conta dá
+// NaN e a sombra some sem erro no console. Uma varredura só, em quem recebe sombra, resolve.
+function fixShadowNormals() {
+  let n = 0;
+  scene.traverse(o => { if (o.isMesh && o.receiveShadow && o.geometry && !o.geometry.attributes.normal) { o.geometry.computeVertexNormals(); n++; } });
+  return n;
+}
 function applyQuality() {
-  sunLight.castShadow = GFX.q >= 2;
+  setShadows();
   const range = [2300, 3600, 5200][GFX.q];
   GFX.treeRange = range;
   if (cloudMesh) cloudMesh.visible = true;
@@ -1268,10 +1333,7 @@ function buildTerrain() {
         st *= 0.86 + 0.28*fract(rr*7.31);
         st *= 1.0 - 0.24*smoothstep(0.86, 1.0, bd);
         diffuseColor.rgb = mix(diffuseColor.rgb, st, vRock);
-        float px = max(fwidth(vWPos.x), fwidth(vWPos.z));
-        float fade = 1.0 - smoothstep(0.12, 0.9, px);
-        float n = vn(vWPos.xz*0.42)*0.6 + vn(vWPos.xz*1.9)*0.4;
-        diffuseColor.rgb *= 1.0 + (n-0.5)*0.24*fade;
+        diffuseColor.rgb *= 1.0 + grain3(vWPos.xz, max(fwidth(vWPos.x), fwidth(vWPos.z)));
         vec2 buv = (vWPos.xz - uBurnRect.xy)*uBurnRect.z;
         if(uBurnRect.z > 0.0 && buv.x > 0.0 && buv.x < 1.0 && buv.y > 0.0 && buv.y < 1.0){
           vec4 b = texture2D(tBurn, buv);
@@ -1483,6 +1545,42 @@ function updateTufts(cx, cz) {
   tuftMesh.instanceMatrix.needsUpdate = true; if (tuftMesh.instanceColor) tuftMesh.instanceColor.needsUpdate = true;
 }
 
+/* ---------- cascalho perto do chão ---------- */
+// Textura e sombra dizem "tem chão aí"; o que diz A QUE ALTURA é objeto de tamanho conhecido
+// passando por baixo. Nos lugares limpos (heliponto, pista, beira de estrada) não nasce capim —
+// e é exatamente onde ele pousa. Pedras recicladas ao redor da câmera resolvem os dois.
+const STON = { n: 17, cell: 2.8, lastX: 1e9, lastZ: 1e9, mesh: null };
+function buildStones() {
+  const gb = new GB(), w = [1, 1, 1];
+  gb.ico(0, 0.05, 0, 0.19, 0.10, 0.15, w, 0, 0.6);
+  gb.ico(1.2, 0.035, -0.8, 0.11, 0.07, 0.10, w, 0, 2.1);
+  gb.ico(-1.0, 0.03, 0.95, 0.09, 0.05, 0.11, w, 0, 4.0);
+  STON.mesh = new THREE.InstancedMesh(gb.geo(), MAT.flat, STON.n * STON.n);
+  STON.mesh.frustumCulled = false; scene.add(STON.mesh);   // não projeta sombra: a 20 cm ela só viraria sujeira na tela
+}
+function updateStones(cx, cz) {
+  if (Math.hypot(cx - STON.lastX, cz - STON.lastZ) < STON.cell) return;
+  STON.lastX = cx; STON.lastZ = cz;
+  const d = new THREE.Object3D(), col = new THREE.Color(), n = STON.n, c = STON.cell, bi = Math.floor(cx / c), bj = Math.floor(cz / c), bs = SITES.base; let q = 0;
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++, q++) {
+    const gi = bi + i - (n >> 1), gj = bj + j - (n >> 1), r3 = hash2(gi + 1733, gj + 521);
+    let x = 0, z = 0, h = 0, ok = r3 >= 0.40;
+    if (ok) { const r1 = hash2(gi + 77, gj - 131), r2 = hash2(gi - 409, gj + 67);
+      x = (gi + r1) * c; z = (gj + r2) * c; h = terrainRaw(x, z);
+      ok = h > waterLevel + 0.5 && !inCity(x, z, 14) && Math.hypot(x - bs.x, z - bs.z) > 13;
+      if (ok) {
+        const s = 0.5 + r3 * 0.9, k = 0.5 + 0.5 * gridSample(shadeArr, x, z), kk = k * (0.62 + r2 * 0.75);
+        d.position.set(x, h + 0.02, z); d.rotation.set(0, r1 * 6.28, 0); d.scale.set(s, s * (0.7 + r2 * 0.6), s);
+        const gi2 = clamp(Math.round((x + WORLD.HALF) / WORLD.CELL), 0, WORLD.N - 1), gj2 = clamp(Math.round((z + WORLD.HALF) / WORLD.CELL), 0, WORLD.N - 1), o = (gj2 * WORLD.N + gi2) * 3;
+        col.setRGB(WORLD.col[o] * kk * 1.16, WORLD.col[o + 1] * kk, WORLD.col[o + 2] * kk * 0.9);
+      }
+    }
+    if (!ok) { d.position.set(0, -500, 0); d.rotation.set(0, 0, 0); d.scale.setScalar(0.01); }
+    d.updateMatrix(); STON.mesh.setMatrixAt(q, d.matrix); STON.mesh.setColorAt(q, col);
+  }
+  STON.mesh.instanceMatrix.needsUpdate = true; if (STON.mesh.instanceColor) STON.mesh.instanceColor.needsUpdate = true;
+}
+
 /* ---------- partículas ---------- */
 const PT = { max: 1500, sys: [] };
 function buildParticles() {
@@ -1578,10 +1676,10 @@ function setTimeOfDay(key) {
   waterU.uShallow.value.setHex(t.water[0]); waterU.uDeep.value.setHex(t.water[1]);
   MAT.cloud.color.setHex(t.cloud); MAT.cloud.emissive.setHex(t.cloud).multiplyScalar(GFX.night ? 0.25 : 0.42);
   for (const s of PT.sys) { s.mat.uniforms.uFog.value.setHex(t.fog); s.mat.uniforms.uFogD.value = t.fogD; }
-  bakeShade(sd); shadeTrees(); TUFT.lastX = 1e9;
+  bakeShade(sd); shadeTrees(); TUFT.lastX = 1e9; STON.lastX = 1e9;
   if (typeof setNightLights === "function") setNightLights(GFX.night, key);
 }
-function setWaterLevel(wl) { waterLevel = wl; waterMesh.position.y = wl; waterU.uWl.value = wl; TUFT.lastX = 1e9; }
+function setWaterLevel(wl) { waterLevel = wl; waterMesh.position.y = wl; waterU.uWl.value = wl; TUFT.lastX = 1e9; STON.lastX = 1e9; }
 
 /* ---------- câmera ---------- */
 const CAM = { az: 0, el: 0.26, dist: 13, yaw: 0, look: { yaw: 0, pitch: 0 }, pos: null, attractT: 0, focus: null };
@@ -1631,19 +1729,22 @@ function renderScene(dt) {
   skyMesh.position.copy(camera.position);
   // árvores: esconde os blocos distantes (o chão verde-escuro continua lá)
   for (const tm of treeMeshes) tm.mesh.visible = Math.hypot(tm.cx - camera.position.x, tm.cz - camera.position.z) < GFX.treeRange + 850;
-  tuftMesh.visible = camera.position.y - terrainRaw(camera.position.x, camera.position.z) < 95;
+  const camAgl = camera.position.y - terrainRaw(camera.position.x, camera.position.z);
+  tuftMesh.visible = camAgl < 95;
   if (tuftMesh.visible) updateTufts(camera.position.x, camera.position.z);
+  STON.mesh.visible = camAgl < 36;
+  if (STON.mesh.visible) updateStones(camera.position.x, camera.position.z);
   // luz do sol acompanha o helicóptero (em passos do tamanho do pixel da sombra, para não tremer)
   const fx = heli ? heli.x : camera.position.x, fz = heli ? heli.z : camera.position.z, fy = heli ? heli.y : 0, sd = GFX.sunDir;
-  const tex = 170 / 2048, cxs = Math.round(fx / tex) * tex, czs = Math.round(fz / tex) * tex;
+  const tex = GFX.shTexel || 0.125, cxs = Math.round(fx / tex) * tex, czs = Math.round(fz / tex) * tex;
   const ld = GFX.lightDir; sunLight.target.position.set(cxs, fy, czs); sunLight.position.set(cxs + ld.x * 400, fy + ld.y * 400, czs + ld.z * 400);
   // sombra simples (mancha) quando a sombra de verdade está desligada
   if (heli && gameState !== "menu") {
     const gy0 = surfaceH(heli.x, heli.z, heli.y), tt = (heli.y - gy0) / Math.max(sd.y, 0.12);
     const bx = heli.x - sd.x * tt, bz = heli.z - sd.z * tt, gy = surfaceH(bx, bz, heli.y), agl = heli.y - gy;
     blobShadow.visible = !sunLight.castShadow && agl < 160 && terrainSlopeDeg(bx, bz) < 28;
-    blobShadow.position.set(bx, gy + 0.14, bz);
-    const k = 1 + agl * 0.006; blobShadow.scale.set(3.6 * k, 3.6 * k, 1);
+    blobShadow.position.set(bx, gy + 0.14, bz); blobShadow.rotation.y = -heli.yaw;
+    const k = 1 + agl * 0.006; blobShadow.scale.set(4.0 * k, 4.0 * k, 1);
     blobShadow.material.opacity = (GFX.night ? 0.22 : 0.4) * clamp(1 - agl / 160, 0, 1) * gridSample(shadeArr, bx, bz);
     waterU.uHeli.value.set(heli.x, heli.z, isWater(heli.x, heli.z) ? clamp(1.3 - (heli.y + SKID_Y - waterLevel) / 14, 0, 1) : 0);
   } else { blobShadow.visible = false; waterU.uHeli.value.z = 0; }
@@ -1754,6 +1855,9 @@ function buildHeli() {
   const cone = new THREE.Mesh(new THREE.ConeGeometry(11, 38, 14, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff2c8, transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
   cone.position.set(16.2, -11.8, 0); cone.rotation.z = Math.atan2(30, 22); cone.visible = false; root.add(cone);
   body.castShadow = true; blades.castShadow = true;
+  // o disco do rotor também projeta: é a parte grande do helicóptero e, sem ela, a sombra no chão
+  // fica do tamanho da cabine e não serve para medir altura
+  disc.castShadow = true;
   Object.assign(HELI, { root, mr, tr, blades, disc, tdisc, strobe, spot, cone, glass, body, spotT: st, aim: null });
   heliRoot = root; scene.add(root);
   // corda e cargas (para carga externa, balde e guincho)
@@ -2685,11 +2789,12 @@ function lifeUpdate(dt) {
 /* ---------------- poeira e borrifo do rotor ---------------- */
 function washUpdate(dt) {
   if (!heli || heli.rpm < 70 || camMode === 1 && Math.random() < 0.5) return;
-  const h = heli, sur = surfaceH(h.x, h.z, h.y), agl = h.y + SKID_Y - sur; if (agl > 13) return;
-  const k = (1 - agl / 13) * clamp(collective * 1.6, 0.25, 1), wat = isWater(h.x, h.z), nP = (GFX.q + 1) * 2.2 * k * dt * 60 * 0.2;
+  const h = heli, sur = surfaceH(h.x, h.z, h.y), agl = h.y + SKID_Y - sur; if (agl > 20) return;
+  const k = (1 - agl / 20) * clamp(collective * 1.6, 0.25, 1), wat = isWater(h.x, h.z), nP = (GFX.q + 1) * 2.9 * k * dt * 60 * 0.2;
   const cnt = Math.floor(nP) + (Math.random() < nP - Math.floor(nP) ? 1 : 0);
   for (let i = 0; i < cnt; i++) {
-    const a = Math.random() * 6.283, r = 3.5 + Math.random() * 4, ca = Math.cos(a), sa = Math.sin(a), sp = 6 + 8 * k;
+    // o anel de poeira abre conforme sobe: é o jeito que o piloto real mede os últimos metros
+    const a = Math.random() * 6.283, r = 3.0 + agl * 0.4 + Math.random() * 4, ca = Math.cos(a), sa = Math.sin(a), sp = 6 + 8 * k;
     if (wat) emit({ x: h.x + ca * r, y: sur + 0.2, z: h.z + sa * r, vx: ca * sp, vy: 1.5 + Math.random() * 2, vz: sa * sp, life: 1.1, size: 0.8, grow: 1.5, grav: 6, drag: 1.2, r: 0.92, g: 0.96, b: 1, a: 0.5 * k });
     else { const c = inCity(h.x, h.z) ? [0.80, 0.78, 0.74] : terrainRaw(h.x, h.z) > 60 ? [0.72, 0.5, 0.36] : [0.78, 0.66, 0.48]; emit({ x: h.x + ca * r, y: sur + 0.3, z: h.z + sa * r, vx: ca * sp, vy: 0.8 + Math.random() * 1.6, vz: sa * sp, life: 2.4, size: 1.6, grow: 3.2, drag: 1.4, r: c[0], g: c[1], b: c[2], a: 0.26 * k }); }
   }
@@ -3839,6 +3944,8 @@ function refreshOpts() {
   $("oTilt").classList.toggle("on", !!tiltEnabled); $("oTilt").textContent = tiltEnabled ? "Giroscópio ligado" : "Ligar giroscópio";
   $("oPed").textContent = $("paPed").textContent = save.opt.autoPedal ? "Pedais: automáticos" : "Pedais: manuais"; $("oPed").classList.toggle("on", !save.opt.autoPedal);
   $("oGfx").textContent = $("paGfx").textContent = "Gráfico: " + q; $("oSnd").textContent = $("paSnd").textContent = save.opt.sound ? "Som: ligado" : "Som: desligado";
+  const sOn = save.opt.shd !== 0;
+  $("oShd").textContent = $("paShd").textContent = sOn ? "Sombras: ligadas" : "Sombras: desligadas"; $("oShd").classList.toggle("on", sOn); $("paShd").classList.toggle("on", sOn);
   $("oSim").textContent = $("paSim").textContent = save.opt.sim ? "Painel: simulador" : "Painel: simples"; $("oSim").classList.toggle("on", !!save.opt.sim); $("paSim").classList.toggle("on", !!save.opt.sim);
   $("oStamps").textContent = "Passaporte de pousos: " + Object.keys(save.stamps).length + "/" + STAMP_KEYS.length;
   $("paKeys").innerHTML = document.body.classList.contains("touch") ? "Coletivo na esquerda · incline o celular para o cíclico (botão GIRO) · barra de pedais na direita · CENTRO zera o giroscópio na posição em que o celular estiver."
@@ -3985,7 +4092,7 @@ function boot() {
   setTimeout(() => {
     try {
       buildWorld(phone ? 32 : 24, phone ? 0.62 : 1);
-      initGfx(); buildHeli(); buildProps(); systemsSetup(); initHud(); initInput();
+      initGfx(); buildHeli(); buildProps(); systemsSetup(); fixShadowNormals(); initHud(); initInput();
       env = newEnv({ windBase: 2 * KT, fromDeg: 100 });
       heli = newHeli({ x: SITES.base.x, z: SITES.base.z, y: SITES.base.y + CG_GROUND, ter: SITES.base.y, rpm: 0 }); heli.done = true;
       M = { t: 0, marks: [] };
@@ -3993,6 +4100,7 @@ function boot() {
       $("oTilt").onclick = () => { enableTiltControl(!tiltEnabled); setTimeout(refreshOpts, 300); };
       const ped = () => { save.opt.autoPedal = !save.opt.autoPedal; persist(); pedal = 0; refreshOpts(); syncPads(); }; $("oPed").onclick = ped; $("paPed").onclick = ped;
       const gfx = () => { cycleQuality(); refreshOpts(); }; $("oGfx").onclick = gfx; $("paGfx").onclick = gfx;
+      const shd = () => { toggleShadows(); refreshOpts(); }; $("oShd").onclick = shd; $("paShd").onclick = shd;
       const sim = () => { save.opt.sim = !save.opt.sim; persist(); refreshOpts(); }; $("oSim").onclick = sim; $("paSim").onclick = sim;
       const snd = () => { save.opt.sound = !save.opt.sound; persist(); sfx.ensure(); refreshOpts(); }; $("oSnd").onclick = snd; $("paSnd").onclick = snd;
       $("brBack").onclick = toMenu; $("brGo").onclick = startMission;
